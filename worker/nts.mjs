@@ -15,7 +15,8 @@ async function cached(env,key,ttl,load){
 export async function ntsAction(env,actionId,paramData){
   let response;
   for(let attempt=0;attempt<2;attempt++){
-    try{response=await(env.__officialFetch||fetch)(base+'/action.do',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Referer:base+'/is/USEISA001M.do'},body:new URLSearchParams({actionId,paramData:JSON.stringify(paramData)}),signal:AbortSignal.timeout(18000)});}catch{if(attempt===1)throw new ApiError(502,'OFFICIAL_SOURCE_UNAVAILABLE','국세청 공식 자료 서버에 연결하지 못했습니다. 조회 실패를 자료 없음으로 판단하지 않습니다.');}
+    const remaining=env.__officialDeadline?env.__officialDeadline-Date.now():18000;if(remaining<200)throw new ApiError(502,'OFFICIAL_SEARCH_TIME_BUDGET','공식 자료 조회 제한 시간에 도달해 확인한 범위만 검토합니다.');
+    try{response=await(env.__officialFetch||fetch)(base+'/action.do',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Referer:base+'/is/USEISA001M.do'},body:new URLSearchParams({actionId,paramData:JSON.stringify(paramData)}),signal:AbortSignal.timeout(Math.max(1,Math.min(6000,remaining)))});}catch{if(attempt===1)throw new ApiError(502,'OFFICIAL_SOURCE_UNAVAILABLE','국세청 공식 자료 서버에 연결하지 못했습니다. 조회 실패를 자료 없음으로 판단하지 않습니다.');}
     if(response&&response.status<500)break;
     if(attempt===0){if(response?.body)await response.body.cancel();response=null;await new Promise(resolve=>setTimeout(resolve,350));}
   }
@@ -71,6 +72,7 @@ export async function sourceDetail(env,item,transactionDate=null){
       if(parts.some(p=>p.ntstBrkdId&&String(p.ntstBrkdId)!==String(version)))throw new ApiError(422,'LAW_VERSION_UNVERIFIED','법령 원문과 선택 버전이 일치하지 않습니다.');
       if(plain(parts.map(p=>p.ntstTextCntn||'').join('\n')).length<10)throw new ApiError(422,'SOURCE_BODY_UNAVAILABLE','실질적인 조문 본문을 확보하지 못했습니다.');
       body=parts.map(p=>plain([p.ntstTextUqnm||p.ntstTextUqnoNm,p.ntstTextNm||p.ntstBracketTextNm,p.ntstTextCntn,p.ntstTextEnlrDscCntn].filter(Boolean).join(' '))).join('\n');
+      item={...item,title:[item.law_title,plain(parts[0].ntstTextUqnm||parts[0].ntstTextUqnoNm),plain(parts[0].ntstTextNm||parts[0].ntstBracketTextNm)].filter(Boolean).join(' ')};
       flags.push('법령 본문과 별도로 부칙·적용례·경과규정 확인 필요');
     }else{
       const data=await ntsAction(env,'ASIQTB002PR01',{dcmDVO:{ntstDcmId:item.source_id}}),doc=data.dcmDVO;
