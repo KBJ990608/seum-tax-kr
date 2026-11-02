@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {localDB} from '../scripts/db-local.mjs';
-import {searchOfficial,sourceDetail,searchItem,plain} from '../worker/nts.mjs';
+import {searchOfficial,sourceDetail,searchItem,plain,ntsAction} from '../worker/nts.mjs';
 import {retrieveKnowledge} from '../worker/research.mjs';
 const law={DOC_ID:'law-source',BSC_ID:'100000000000001561',BRKD_ID:'100027612320251001',TEXT_UQNO:'0021005',TEXT_UQNM:'제21조',TEXT_KRN_NM:'일괄공제',NM:'상속세 및 증여세법',TEXT_KRN_CNTN:'검색 단계 요약은 원문과 다릅니다.',ENFR_DT:'20260102',PMG_NO:'21065',SYS_CL_CD:'01',TLAW_CL_CD:'109'};
 const decision={DOC_ID:'200000000000013842',NTST_DCM_CL_CD:'08',TTL:'가상 검증용 상속 사건',NTST_DCM_DSCM_CNTN:'조심-2024-부-5573',NTST_DCM_RGT_DT:'20250722',GIST_CNTN:'가상 검증용 검색 요지',NTST_LWS_DFNT_YN:'N'};
@@ -27,6 +27,13 @@ test('official failure becomes an explicit review warning and cannot silently im
  const result=await retrieveKnowledge(env,'개인 질문',[],'2026-11-02');assert.equal(result.evidence.length,0);assert(result.warnings.some(w=>w.includes('실시간 검색에 실패')));assert.deepEqual(result.research.issue_ids,['inherit-deduction']);env.DB.close();
 });
 test('HTML normalization retains Korean amendment brackets and strips executable markup',()=>{assert.equal(plain('<p>본문 &lt;개정 2026.1.1&gt;</p><script>bad()</script>'),'본문 <개정 2026.1.1>');});
+test('official read retries a transient network failure once but does not retry access denial',async()=>{
+ let attempts=0;const result=await ntsAction({__officialFetch:async()=>{attempts++;if(attempts===1)throw Error('temporary network failure');return Response.json({status:'SUCCESS',data:{READ:{verified:true}}});}},'READ',{});assert.equal(result.verified,true);assert.equal(attempts,2);
+ attempts=0;await assert.rejects(ntsAction({__officialFetch:async()=>{attempts++;return Response.json({}, {status:403});}},'READ',{}),e=>e.code==='OFFICIAL_SOURCE_HTTP_403');assert.equal(attempts,1);
+});
+test('optional cache failure does not discard a fresh valid official search response',async()=>{
+ const env={DB:{prepare(){throw Error('cache temporarily unavailable');}},__officialFetch:official(()=>({searchResultVO:{collectionList:[{nameEn:'statute',totalCount:1,resultList:[law]}]}}))};const result=await searchOfficial(env,'상속공제');assert.equal(result.collections[0].documents.length,1);
+});
 test('law paragraphs use article references, not misleading local paragraph numbers',async()=>{
  const env={__officialFetch:official(()=>({txaStttHsryDVOList:[
   {ntstTextUqno:'0021005',ntstTextUqnm:'제21조',ntstTextNm:'일괄공제',ntstBrkdId:law.BRKD_ID,ntstTextCntn:null,rfrnNtstTextUqno:'0021005'},

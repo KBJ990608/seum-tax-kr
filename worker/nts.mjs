@@ -7,14 +7,19 @@ export function plain(value){return String(value||'').replace(/<!H[SE]>/g,'').re
 function isoDate(value){const s=String(value||'').replace(/\D/g,'').slice(0,8);if(s.length!==8)return null;try{return validDate(s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6));}catch{return null;}}
 async function cached(env,key,ttl,load){
   const id='nts:'+key;
-  if(env.DB){const row=await env.DB.prepare('SELECT payload FROM source_cache WHERE key=? AND expires_at>?').bind(id,new Date().toISOString()).first();if(row){try{return JSON.parse(row.payload);}catch{}}}
+  if(env.DB){try{const row=await env.DB.prepare('SELECT payload FROM source_cache WHERE key=? AND expires_at>?').bind(id,new Date().toISOString()).first();if(row){try{return JSON.parse(row.payload);}catch{}}}catch{/* Cache failure must not prevent a fresh official read. */}}
   const data=await load();
-  if(env.DB)await env.DB.prepare('INSERT INTO source_cache (key,payload,expires_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET payload=excluded.payload,expires_at=excluded.expires_at').bind(id,JSON.stringify(data),new Date(Date.now()+ttl).toISOString()).run();
+  if(env.DB){try{await env.DB.prepare('INSERT INTO source_cache (key,payload,expires_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET payload=excluded.payload,expires_at=excluded.expires_at').bind(id,JSON.stringify(data),new Date(Date.now()+ttl).toISOString()).run();}catch{/* The verified response remains usable without cache persistence. */}}
   return data;
 }
 export async function ntsAction(env,actionId,paramData){
-  let response;try{response=await(env.__officialFetch||fetch)(base+'/action.do',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Referer:base+'/is/USEISA001M.do'},body:new URLSearchParams({actionId,paramData:JSON.stringify(paramData)}),signal:AbortSignal.timeout(18000)});}catch{throw new ApiError(502,'OFFICIAL_SOURCE_UNAVAILABLE','국세청 공식 자료 서버에 연결하지 못했습니다. 조회 실패를 자료 없음으로 판단하지 않습니다.');}
-  if(!response.ok)throw new ApiError(502,'OFFICIAL_SOURCE_UNAVAILABLE','국세청 공식 자료 조회에 실패했습니다.');
+  let response;
+  for(let attempt=0;attempt<2;attempt++){
+    try{response=await(env.__officialFetch||fetch)(base+'/action.do',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Referer:base+'/is/USEISA001M.do'},body:new URLSearchParams({actionId,paramData:JSON.stringify(paramData)}),signal:AbortSignal.timeout(18000)});}catch{if(attempt===1)throw new ApiError(502,'OFFICIAL_SOURCE_UNAVAILABLE','국세청 공식 자료 서버에 연결하지 못했습니다. 조회 실패를 자료 없음으로 판단하지 않습니다.');}
+    if(response&&response.status<500)break;
+    if(attempt===0){if(response?.body)await response.body.cancel();response=null;await new Promise(resolve=>setTimeout(resolve,350));}
+  }
+  if(!response?.ok)throw new ApiError(502,'OFFICIAL_SOURCE_HTTP_'+(response?.status||'UNAVAILABLE'),'국세청 공식 자료 조회에 실패했습니다.');
   let result;try{result=await response.json();}catch{throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 자료 응답 형식이 변경되어 원문 검증을 보류했습니다.');}
   if(result.status!=='SUCCESS'||!result.data||!(actionId in result.data))throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 검색 응답을 검증하지 못했습니다.');return result.data[actionId];
 }
