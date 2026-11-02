@@ -2,10 +2,7 @@
 
 상속·증여·양도 세무 검토를 위한 모바일 웹 앱입니다. 고객은 설치나 로그인 없이 이용하고, 전문가 검토 화면은 담당자 인증으로 보호합니다.
 
-- **앱:** https://seum-tax-kr.kbj060813.chatgpt.site
-- **AI 상담:** https://seum-tax-kr.kbj060813.chatgpt.site/#chat
-- **GitHub:** https://github.com/KBJ990608/seum-tax-kr
-- **전문가 검토:** 앱의 `/expert` 경로
+[앱 바로가기](https://seum-tax-kr.kbj060813.chatgpt.site)
 
 ## 세 기능의 역할
 
