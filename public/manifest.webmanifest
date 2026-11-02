@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "세움 · 상속·증여·양도 세무 컨설팅",
+  "short_name": "세움",
+  "description": "예상 세액 계산과 근거를 확인하는 세무 검토 워크스페이스",
+  "lang": "ko-KR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f9fc",
+  "theme_color": "#4165f5",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
