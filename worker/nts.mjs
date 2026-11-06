@@ -22,7 +22,7 @@ export async function ntsAction(env,actionId,paramData){
   }
   if(!response?.ok)throw new ApiError(502,'OFFICIAL_SOURCE_HTTP_'+(response?.status||'UNAVAILABLE'),'국세청 공식 자료 조회에 실패했습니다.');
   let result;try{result=await response.json();}catch{throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 자료 응답 형식이 변경되어 원문 검증을 보류했습니다.');}
-  if(result.status!=='SUCCESS'||!result.data||!(actionId in result.data))throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 검색 응답을 검증하지 못했습니다.');return result.data[actionId];
+  if(!result||result.status!=='SUCCESS'||!result.data||typeof result.data!=='object'||!(actionId in result.data)||!result.data[actionId]||typeof result.data[actionId]!=='object')throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 검색 응답을 검증하지 못했습니다.');return result.data[actionId];
 }
 export function searchItem(row,collection){
   const id=String(row.DOC_ID||'');
@@ -45,8 +45,31 @@ export async function searchOfficial(env,query,{page=1,limit=8,collection='all'}
   });
 }
 function listFrom(value,key){return Array.isArray(value)?value:Array.isArray(value?.[key])?value[key]:[];}
+// Extract only explicit citations. A related-law entry is a pointer, never proof
+// that its current text or historical applicability has been verified.
+export function relatedLawReferences(entries,body=''){
+  const normalize=value=>plain(value).replace(/(제\s*\d+\s*조)\s*의\s*(\d+)/g,'$1의$2');
+  const references=(Array.isArray(entries)?entries:[]).filter(value=>typeof value==='string').map(normalize).filter(Boolean);
+  // Longest names first, with a Korean-letter boundary: 증여세법 must not be
+  // extracted from inside 상속세및증여세법. Branch articles remain intact.
+  const names='상속세\\s*및\\s*증여세법|조세특례제한법|국제조세조정에\\s*관한\\s*법률|지방세특례제한법|국세기본법|국세징수법|소득세법|법인세법|부가가치세법|지방세법|민법|상법';
+  const pattern=new RegExp('(?<![가-힣A-Za-z])('+names+')(?:\\s*(시행령|시행규칙))?\\s*[」』]?\\s*제\\s*(\\d+)\\s*조(?:\\s*의\\s*(\\d+))?','g');
+  for(const match of plain(body).matchAll(pattern))references.push(normalize(match[1]+(match[2]?' '+match[2]:'')+' 제'+match[3]+'조'+(match[4]?'의'+match[4]:'')));
+  const normalizedBody=normalize(body);
+  const seen=new Set();return references.filter(value=>{
+    const key=value.replace(/\s/g,'');
+    // Older NTS relation lists can contain both the full law name and its
+    // trailing substring. Suppress only that demonstrable duplicate; retain
+    // an explicit standalone occurrence, whose meaning we must not rewrite.
+    if(/^증여세법(?:시행령|시행규칙)?제\d+조/.test(key)&&references.some(other=>other.replace(/\s/g,'')==='상속세및'+key)){
+      const escaped=[...key].join('\\s*');
+      if(!new RegExp('(?<![가-힣A-Za-z])'+escaped+'(?![\\d]|의\\d)').test(normalizedBody))return false;
+    }
+    if(seen.has(key))return false;seen.add(key);return true;
+  });
+}
 export async function sourceDetail(env,item,transactionDate=null){
-  const key=await hash(JSON.stringify({id:item.source_id,version:item.version_id,date:transactionDate}));
+  const key=await hash(JSON.stringify({parser:2,id:item.source_id,basis:item.basis_id,article:item.article_id,version:item.version_id,date:transactionDate}));
   return cached(env,'detail:'+key,6*60*60*1000,async()=>{
     let body,related=[],flags=[],effectiveFrom=item.effective_from||null,effectiveTo=null,url=item.url;
     if(item.kind==='law'){
@@ -65,11 +88,11 @@ export async function sourceDetail(env,item,transactionDate=null){
       const allParts=listFrom(data,'txaStttHsryDVOList');
       // NTS numbers paragraphs locally (0001006/0002006). Their article
       // membership is rfrnNtstTextUqno, not a shared numeric prefix.
-      const start=allParts.findIndex(p=>String(p.ntstTextUqno)===item.article_id);
+      const start=allParts.findIndex(p=>String(p.ntstTextUqno)===String(item.article_id));
       if(start<0)throw new ApiError(422,'SOURCE_BODY_UNAVAILABLE','선택한 법령 버전에서 해당 조문을 찾지 못했습니다.');
       const next=allParts.findIndex((p,i)=>i>start&&['2','3','4','5'].includes(String(p.ntstTextUqno).slice(-1)));
-      const parts=allParts.slice(start,next<0?undefined:next).filter(p=>!p.rfrnNtstTextUqno||String(p.rfrnNtstTextUqno)===item.article_id);
-      if(parts.some(p=>p.ntstBrkdId&&String(p.ntstBrkdId)!==String(version)))throw new ApiError(422,'LAW_VERSION_UNVERIFIED','법령 원문과 선택 버전이 일치하지 않습니다.');
+      const parts=allParts.slice(start,next<0?undefined:next).filter(p=>!p.rfrnNtstTextUqno||String(p.rfrnNtstTextUqno)===String(item.article_id));
+      if(parts.some(p=>(p.ntstBrkdId&&String(p.ntstBrkdId)!==String(version))||(p.ntstBscId&&String(p.ntstBscId)!==String(item.basis_id))))throw new ApiError(422,'LAW_VERSION_UNVERIFIED','법령 원문과 선택 버전이 일치하지 않습니다.');
       if(plain(parts.map(p=>p.ntstTextCntn||'').join('\n')).length<10)throw new ApiError(422,'SOURCE_BODY_UNAVAILABLE','실질적인 조문 본문을 확보하지 못했습니다.');
       body=parts.map(p=>plain([p.ntstTextUqnm||p.ntstTextUqnoNm,p.ntstTextNm||p.ntstBracketTextNm,p.ntstTextCntn,p.ntstTextEnlrDscCntn].filter(Boolean).join(' '))).join('\n');
       item={...item,title:[item.law_title,plain(parts[0].ntstTextUqnm||parts[0].ntstTextUqnoNm),plain(parts[0].ntstTextNm||parts[0].ntstBracketTextNm)].filter(Boolean).join(' ')};
@@ -77,9 +100,12 @@ export async function sourceDetail(env,item,transactionDate=null){
     }else{
       const data=await ntsAction(env,'ASIQTB002PR01',{dcmDVO:{ntstDcmId:item.source_id}}),doc=data.dcmDVO;
       if(!doc||String(doc.ntstDcmId)!==item.source_id)throw new ApiError(422,'SOURCE_ID_MISMATCH','검색 결과와 원문 식별자가 일치하지 않습니다.');
-      const html=(data.dcmHwpEditorDVOList||[]).filter(f=>f.dcmFleTy==='html').map(f=>plain(f.dcmFleByte)).filter(Boolean);
+      const files=listFrom(data,'dcmHwpEditorDVOList');
+      const html=files.filter(f=>f&&String(f.dcmFleTy).toLowerCase()==='html'&&typeof f.dcmFleByte==='string').map(f=>plain(f.dcmFleByte)).filter(Boolean);
+      const substantive=[plain(doc.ntstDcmGistCntn),plain(doc.ntstDcmCntn),plain(doc.ntstDcmRplyCntn),...html].filter(Boolean);
+      if(substantive.join('\n').length<80)throw new ApiError(422,'SOURCE_BODY_UNAVAILABLE','공식 상세 본문을 확보하지 못했습니다. 제목이나 검색 요약을 원문으로 사용하지 않습니다.');
       body=[plain(doc.ntstDcmTtl),plain(doc.ntstDcmGistCntn),plain(doc.ntstDcmCntn),plain(doc.ntstDcmRplyCntn),...html].filter(Boolean).join('\n\n');
-      related=[...new Set((data.dcmRltnStttList||[]).map(r=>plain(r.ntstTextNm)).filter(Boolean))];
+      related=relatedLawReferences(listFrom(data,'dcmRltnStttList').filter(r=>r&&(!r.ntstDcmId||String(r.ntstDcmId)===String(item.source_id))).map(r=>r.ntstTextNm),body);
       const number=plain(doc.ntstDcmDscmCntn);if(item.case_number&&number&&item.case_number!==number)throw new ApiError(422,'DOCUMENT_NUMBER_MISMATCH','문서번호가 일치하지 않습니다.');item={...item,case_number:number||item.case_number,decision_date:isoDate(doc.ntstDcmRgtDt)||item.decision_date};
       if(item.kind==='case'&&doc.ntstLwsDfntYn!=='Y')flags.push('판결의 확정·상고심 진행 상태 확인 필요');
       if(item.kind==='decision')flags.push('행정 결정례의 효력과 동일 쟁점 법원 판결 확인 필요');
@@ -91,6 +117,13 @@ export async function sourceDetail(env,item,transactionDate=null){
     if(body.length>200000)flags.push('긴 원문 중 관련 구간만 답변에 전달');
     const retrievedAt=new Date().toISOString(),full=body.slice(0,200000);
     return {...item,url:officialUrl(url),body:full,digest:await hash(full),effective_from:effectiveFrom,effective_to:effectiveTo,related_laws:related,verification_notes:flags,verified_at:retrievedAt,metadata_only:false,origin:'nts_live',scope_note:'공식 상세 본문 자동 대조 · 전문가 적용 검토 전'};
+  }).catch(error=>{
+    // Keep navigation separate from evidence. Callers may display this pointer,
+    // but a failed detail request must still reject and must never enter RAG.
+    if(error instanceof ApiError){
+      try{error.source_metadata={source_id:item.source_id,title:item.title,url:officialUrl(item.url),kind:item.kind,metadata_only:true};}catch{/* Do not preserve an invalid link. */}
+    }
+    throw error;
   });
 }
 export function relevantExcerpt(body,query,max=10000){

@@ -1,0 +1,39 @@
+/* Shared accessibility layer: retain Seum's blue palette with readable text. */
+:root{--blue:#3454da;--muted:#52637b;--chat-muted:#52637b}
+html{scroll-padding-top:24px;scroll-padding-bottom:100px}
+body{line-height:1.65}
+:where(button,a,input,textarea,select,summary,[tabindex]):focus-visible{outline:3px solid #2546b9!important;outline-offset:3px}
+:where(button,a,input,textarea,select,summary,[tabindex]){scroll-margin-block:24px 110px}
+input::placeholder,textarea::placeholder{color:#63718a!important;opacity:1}
+button:disabled{cursor:not-allowed}
+.skip-link{position:fixed;left:16px;top:-100px;z-index:100;background:#192643;color:white;padding:12px 20px;border-radius:8px}.skip-link:focus{top:12px}
+.sidebar{overflow-y:auto}.sidebar-bottom{padding-top:24px}.sidebar nav{flex-shrink:0}
+.nav-label,.brand-en,.workspace,.profile small,nav button,.sub,.hero p,.quick p,.section-title h2 small,.text-btn,.meta,.step p,.input-help,.empty,.mini-label,.breakdown span,.issue-card p,footer,.header-right{color:#52637b}
+.notice{color:#425d8b}.tag{color:#5943ad}.tag.gray{color:#52637b}.tag.gift{color:#315b9c}.tag.transfer{color:#2b7058}
+.pill,.expert p,.hero-note,.flow span{color:#52637b}
+.sub,.hero p,.quick p,.case-row strong,.step strong,.step p,.notice,.empty,.issue-card p{font-size:14px}
+.primary,.text-btn,.source-link,.tabs button,.panel h3{font-size:14px}
+.tabs button,.text-btn,.source-link,.close,.chat-source-close,.research-related,.research-pagination button,summary{min-height:44px}.close,.chat-source-close{min-width:44px}
+.source-link{display:inline-flex;align-items:center;text-decoration:underline;text-underline-offset:3px}
+.case-text{min-width:0;text-align:left;background:transparent;color:inherit;padding:4px 0}.case-row strong{overflow-wrap:anywhere}
+.rag-help,.rag-form label,.consent,.review-meta,.review-flag,.rag-status,.source-entry,.audit-line,.evidence-card details{color:#52637b}
+.research-options label,.research-options select,.research-options input,.research-tax-tabs button,.research-issue>span,.research-issue small,.research-issue b,.research-start,.research-result-header>span,.research-category b,.research-document small,.research-document p,.research-metadata-label,.research-open,.research-pagination span,.research-none,.research-indexed,.research-connection-map span,.research-related{color:#52637b}
+.research-issue strong,.research-document strong{color:#304969;font-size:14px}.research-document p,.research-options label{font-size:14px}.research-category{align-items:start;flex-wrap:wrap}.research-category b{white-space:normal}.research-count{display:block;font-size:12px;color:#52637b;font-weight:400}
+.research-error-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:16px}.research-reference{width:100%;min-height:80px;font:inherit;padding:12px;border:1px solid #a5b4cc;border-radius:8px;color:#304969;background:#f7f9fc}
+.chat-overline,.chat-history-label,.chat-thread small,.chat-thread-empty,.chat-history-note,.chat-toolbar summary,.chat-welcome>p,.chat-starters span,.chat-compose-note,.chat-consent,.chat-author span,.chat-grounds,.chat-sources,.chat-source-row span,.chat-source-row small,.chat-review-heading>span,.chat-review-heading p,.chat-review-empty p,.chat-review-card ul,.chat-review-card details,.chat-review-card>small,.chat-review-issue,.chat-review-foot,.chat-refresh,.chat-expert-login,.chat-research-meta,.chat-wait{color:#52637b}
+.chat-prose,.chat-welcome>p,.chat-starters button,.chat-actions,.chat-actions p,.chat-source-excerpt{font-size:14px}.chat-review-status,.chat-review-note,.chat-expert-question,.chat-no-answer{color:#795a27}.chat-review-status.done{color:#27694f}.chat-toolbar{height:auto;min-height:58px;padding-block:12px;flex-wrap:wrap}.chat-compose-area form button{min-width:44px;min-height:44px}
+.tax-workflow,.tax-workflow span,.tax-field-grid small,.tax-money-input span,.tax-calculation-result>span,.tax-calculation-result p,.tax-step,.tax-step p,.tax-exclusions,.analysis-compare dt,.analysis-compare dd,.analysis-finding,.analysis-actions,.analysis-evidence{color:#52637b}.tax-field-grid small,.tax-step p,.tax-exclusions{font-size:13px}.analysis-review>div>span,.analysis-review h3,.analysis-review details{color:#795f35}
+#taxCalculationError,#taxAnalyzeError,#researchAnalyzeError,#chatError:not(:empty),.rag-error{color:#923e29}
+.panel-top{gap:12px;flex-wrap:wrap}.heading{gap:20px}.heading>div:first-child{min-width:0}.tax-step b{float:none;display:block}.tax-workflow span{font-size:13px}
+@media(max-width:800px){
+ header{position:static}.sidebar{overflow:visible}nav button span{font-size:12px}nav button{min-width:0}nav button span{line-height:1.4}.sidebar nav{height:76px}.sidebar{height:calc(76px + env(safe-area-inset-bottom))}main{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+ #app{padding-inline:16px}.panel{padding:18px}.hero p{font-size:14px;max-width:100%}.hero-art{opacity:.22}.hero .primary{position:relative;z-index:1}.hero h2{font-size:24px}.hero{padding:24px}.hero p br{display:none}
+ .research-input-row{flex-wrap:wrap}.research-input-row input{flex:1;min-width:150px}.research-input-row .primary{width:100%}.research-options label{width:100%}.research-options input,.research-options select{width:100%;min-height:44px}.research-pagination{gap:10px;flex-wrap:wrap}
+ .chat-page-heading{flex-wrap:wrap;gap:12px}.chat-page-heading h1{font-size:24px}.chat-page-heading .chat-overline{font-size:12px}.chat-surface{height:auto;min-height:0;overflow:visible}.chat-messages{max-height:65dvh;min-height:220px}.chat-compose-area{position:static}.chat-compose-note,.chat-consent{font-size:12px}.chat-toolbar{font-size:12px}.chat-review-pane{overflow:visible}.chat-compose-area textarea{font-size:16px}.research-connection-map{flex-wrap:wrap}
+ dialog,.research-detail-dialog,.chat-source-dialog{max-height:calc(100dvh - 40px);max-width:calc(100vw - 24px);padding:20px}dialog h2{overflow-wrap:anywhere}
+ .rag-form input,.rag-form textarea,.rag-form select{font-size:16px}.section-title{gap:12px}.flow{flex-wrap:wrap}.flow span{font-size:12px}.section-title h2{font-size:16px}
+}
+@media(max-height:600px){.sidebar-bottom{display:none}header{position:static}.chat-surface{height:auto;min-height:0}.chat-messages{max-height:none}.chat-review-pane{max-height:none}html{scroll-padding-top:16px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+.marco-panel{margin-block:24px;border-color:#b6c6ef}.marco-panel h2{font-size:20px;margin:8px 0}.marco-panel .rag-form{margin-top:18px}.marco-panel details{margin-top:18px}.marco-panel li{overflow-wrap:anywhere}#marcoError{color:#923e29}#taxEngineStatus{white-space:normal}.marco-panel button:disabled{background:#e9edf5;color:#52637b;box-shadow:none}

@@ -1,0 +1,161 @@
+{
+  "health": {
+    "status": "ok",
+    "service": "marco-korean-tax",
+    "api_version": 1,
+    "execution_mode": "source_bound_rules_and_native_knowledge_graph",
+    "llm_used": false,
+    "network_required": false,
+    "request_persistence": false,
+    "upstream_commit": "c7d648a7fd952e750b8b3b0cb017d6b79ba27b13",
+    "pack_id": "marco-korean-tax-core-2026-11-06",
+    "knowledge_sha256": "ff6ace5449d5c9fa587f2dad3ca923b094d2dc2ae76b1563521333e1cbb4b99c",
+    "supported_from": "2026-01-02",
+    "verified_through": "2026-11-06",
+    "capabilities": [
+      "structured_basic_tax",
+      "declared_questions",
+      "confirmed_transfer_classification"
+    ],
+    "general_freeform_counseling": false
+  },
+  "success": {
+    "schema_version": 1,
+    "pack_id": "marco-korean-tax-core-2026-11-06",
+    "knowledge_sha256": "ff6ace5449d5c9fa587f2dad3ca923b094d2dc2ae76b1563521333e1cbb4b99c",
+    "status": "computed",
+    "reason": "과세최저한 미달: 부과하지 않음",
+    "basic_tax_won": 0,
+    "source_ids": [
+      "ita-55-2"
+    ],
+    "sources": [
+      {
+        "id": "ita-55-2",
+        "title": "상속세 및 증여세법 제55조 제2항 (증여세 과세최저한)",
+        "url": "https://www.law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1029615901",
+        "effective_from": "2026-01-02",
+        "verified_on": "2026-11-06",
+        "authority": "국가법령정보센터",
+        "version": "법률 제21065호"
+      }
+    ],
+    "rule_trace": [
+      {
+        "rule_id": "gift-minimum",
+        "source_ids": [
+          "ita-55-2"
+        ],
+        "operation": "lt",
+        "left_won": 499999,
+        "right_won": 500000,
+        "result": true
+      }
+    ],
+    "assumptions": [
+      "사용자가 과세표준을 별도로 확인했습니다.",
+      "일반 기본세율만 적용합니다."
+    ],
+    "limitations": [
+      "개별 공제 자격·한도, 과세가액 평가·사전증여 합산은 자동 결정하지 않습니다.",
+      "세대생략 할증·특례·감면·신고세액공제·기납부세액·가산세·신고 의무는 계산하지 않습니다.",
+      "표시 금액은 일반 기본세율 산출 참고액이며 확정 납부세액이 아닙니다.",
+      "원 미만 버림은 이 시나리오의 표시 규칙이며 최종 세액 절사 규칙의 법률 검증이 아닙니다.",
+      "임의 자연어 이해, 신경망 가중치 학습, 전문 세무 검토를 대체하지 않습니다."
+    ],
+    "supported_from": "2026-01-02",
+    "verified_through": "2026-11-06",
+    "tax_type": "gift",
+    "as_of": "2026-11-06",
+    "tax_base_won": 499999,
+    "below_minimum": true,
+    "rate_percent": null,
+    "progressive_deduction_won": null
+  },
+  "abstain": {
+    "schema_version": 1,
+    "pack_id": "marco-korean-tax-core-2026-11-06",
+    "knowledge_sha256": "ff6ace5449d5c9fa587f2dad3ca923b094d2dc2ae76b1563521333e1cbb4b99c",
+    "status": "unsupported",
+    "reason": "총재산가액을 과세표준으로 간주하지 않습니다.",
+    "basic_tax_won": null,
+    "source_ids": [],
+    "sources": [],
+    "rule_trace": [],
+    "assumptions": [],
+    "limitations": [
+      "개별 공제 자격·한도, 과세가액 평가·사전증여 합산은 자동 결정하지 않습니다.",
+      "세대생략 할증·특례·감면·신고세액공제·기납부세액·가산세·신고 의무는 계산하지 않습니다.",
+      "표시 금액은 일반 기본세율 산출 참고액이며 확정 납부세액이 아닙니다.",
+      "원 미만 버림은 이 시나리오의 표시 규칙이며 최종 세액 절사 규칙의 법률 검증이 아닙니다.",
+      "임의 자연어 이해, 신경망 가중치 학습, 전문 세무 검토를 대체하지 않습니다."
+    ],
+    "supported_from": "2026-01-02",
+    "verified_through": "2026-11-06"
+  },
+  "question": {
+    "schema_version": 1,
+    "pack_id": "marco-korean-tax-core-2026-11-06",
+    "knowledge_sha256": "ff6ace5449d5c9fa587f2dad3ca923b094d2dc2ae76b1563521333e1cbb4b99c",
+    "status": "answered",
+    "reason": "검증된 지식팩의 제한된 설명",
+    "basic_tax_won": null,
+    "source_ids": [
+      "ita-2"
+    ],
+    "sources": [
+      {
+        "id": "ita-2",
+        "title": "상속세 및 증여세법 제2조 (정의)",
+        "url": "https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1032164667",
+        "effective_from": "2026-01-02",
+        "verified_on": "2026-11-06",
+        "authority": "국가법령정보센터",
+        "version": "법률 제21065호"
+      }
+    ],
+    "rule_trace": [
+      {
+        "rule_id": "fact-lookup",
+        "fact_id": "death-gift",
+        "source_ids": [
+          "ita-2"
+        ]
+      }
+    ],
+    "assumptions": [],
+    "limitations": [
+      "개별 공제 자격·한도, 과세가액 평가·사전증여 합산은 자동 결정하지 않습니다.",
+      "세대생략 할증·특례·감면·신고세액공제·기납부세액·가산세·신고 의무는 계산하지 않습니다.",
+      "표시 금액은 일반 기본세율 산출 참고액이며 확정 납부세액이 아닙니다.",
+      "원 미만 버림은 이 시나리오의 표시 규칙이며 최종 세액 절사 규칙의 법률 검증이 아닙니다.",
+      "임의 자연어 이해, 신경망 가중치 학습, 전문 세무 검토를 대체하지 않습니다."
+    ],
+    "supported_from": "2026-01-02",
+    "verified_through": "2026-11-06",
+    "native_evidence": {
+      "engine": "MARCO engine.Session",
+      "verdict": "인정",
+      "graph_node": "death_gift",
+      "evidence_node": "질문_death_gift",
+      "declared_question": "사인증여는 증여세야?",
+      "graph_answer": "2026-01-02부터 2026-11-06까지 확인한 제한 지식입니다. 유증과 사인증여는 상속세 및 증여세법상 상속의 범위에 포함됩니다. 이름에 증여가 들어간다는 이유만으로 증여세로 분류하면 안 됩니다.",
+      "path": [
+        [
+          "질문_death_gift",
+          "확인함",
+          "death_gift"
+        ],
+        [
+          "death_gift",
+          "이어짐",
+          "검증된세법설명"
+        ]
+      ]
+    },
+    "answer": "유증과 사인증여는 상속세 및 증여세법상 상속의 범위에 포함됩니다. 이름에 증여가 들어간다는 이유만으로 증여세로 분류하면 안 됩니다.",
+    "topic": "death-gift",
+    "tax_type": "inheritance",
+    "as_of": "2026-11-06"
+  }
+}

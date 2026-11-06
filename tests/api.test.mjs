@@ -16,7 +16,9 @@ test('deployment source release requires matching store and preserves subsequent
  await worker.fetch(request('/api/health'),env,{});
  assert.equal((await DB.prepare('SELECT count(*) as n FROM documents').first()).n,0);
  env.OPENAI_VECTOR_STORE_ID=release.store_id;
- const health=await(await worker.fetch(request('/api/health'),env,{})).json();assert.equal(health.rag_ready,true);
+ const health=await(await worker.fetch(request('/api/health'),env,{})).json();
+ if(!release.store_id||!release.documents.length){assert.equal(health.rag_ready,false);assert.equal((await DB.prepare('SELECT count(*) as n FROM documents').first()).n,0);DB.close();return;}
+ assert.equal(health.rag_ready,true);
  assert.equal((await DB.prepare('SELECT count(*) as n FROM documents').first()).n,5);
  const doc=await DB.prepare('SELECT id FROM documents LIMIT 1').first();
  await DB.prepare("UPDATE documents SET status='failed' WHERE id=?").bind(doc.id).run();

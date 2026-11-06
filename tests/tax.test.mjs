@@ -10,7 +10,7 @@ const reply={summary:'검증용 조건 검토입니다.',findings:[{text:'검증
 function generated(payload){return Response.json({status:'completed',id:'resp-fixture',model:'test-model',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(payload)}]}]});}
 async function fixture(){const env={DB:localDB(),OPENAI_API_KEY:'test-only'};await env.DB.prepare("INSERT INTO settings VALUES ('vector_store_id','vs-fixture')").run();await env.DB.prepare('INSERT INTO documents (id,title,kind,url,body,effective_from,digest,file_id,status,verified_by,verified_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)').bind('law','검증용 법령','law','https://www.law.go.kr/법령/상속세및증여세법','검증용 본문','2026-01-01','digest','file-fixture','active','test',new Date().toISOString()).run();return env;}
 test('inheritance and gift progressive bracket boundaries use integer won arithmetic',()=>{
- const expected=[[0,0],[100000000,10000000],[100000001,10000000],[500000000,90000000],[1000000000,240000000],[3000000000,1040000000],[4000000000,1540000000]];
+ const expected=[[0,0],[499999,0],[500000,50000],[500001,50000],[100000000,10000000],[100000001,10000000],[500000000,90000000],[1000000000,240000000],[3000000000,1040000000],[4000000000,1540000000]];
  for(const tax_kind of ['상속세','증여세'])for(const [amount,tax]of expected)assert.equal(calculateTax({...base,tax_kind,inputs:{amount,debt:0,prior:0,deduction:0}}).calculated_tax,tax);
  assert.equal(calculateTax(base).calculated_tax,240000000);assert.equal(calculateTax({...base,inputs:{amount:0,debt:0,prior:0,deduction:500000000}}).calculated_tax,0);
 });
