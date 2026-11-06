@@ -1,0 +1,62 @@
+[
+  {
+    "path": "engine.py",
+    "bytes": 343206,
+    "sha256": "c451d026278ea5723fb6ffa40f60126ec0841bd8a677df51c5111bb642feec28"
+  },
+  {
+    "path": "encoder.py",
+    "bytes": 29492,
+    "sha256": "3dc0609fa81c570b9b1b4736c86d86769fc2b0b85851ec40b0bf4d00a9b56a4a"
+  },
+  {
+    "path": "language_components.py",
+    "bytes": 49956,
+    "sha256": "754a67644e6ba799485aca20d05a12605f4663d42db8a5a2857a6d8e8a989520"
+  },
+  {
+    "path": "marco/__init__.py",
+    "bytes": 130,
+    "sha256": "42a9154be6d03c7a01a5c4f45ad2e24f6660661fe8700aeb43aace3ef1afd0bb"
+  },
+  {
+    "path": "marco/knowledge/__init__.py",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "marco/knowledge/korean_tax/__init__.py",
+    "bytes": 10510,
+    "sha256": "81795ee9782ba632d8670304a57863d91d8265db382b43a5010b4ec7f51e442f"
+  },
+  {
+    "path": "marco/language/__init__.py",
+    "bytes": 444,
+    "sha256": "1e982e1f452dd4289e0492788e93361dea365e12ae0c4b1f0ffb1ebc7fad469c"
+  },
+  {
+    "path": "marco/language/hangul.py",
+    "bytes": 33066,
+    "sha256": "2cb0f3060275ef5b5532b376ed299cb3bf1bac25dd0406e4d742a7a35994f291"
+  },
+  {
+    "path": "styles/한국어.json",
+    "bytes": 165727,
+    "sha256": "8fe6d434bc3e16a2ec275803eceb203568d62e96510b44c7871fe69efaaa48cc"
+  },
+  {
+    "path": "styles/english.json",
+    "bytes": 113946,
+    "sha256": "88aad51cf6fa6d1c1867e5a12f1aff9a0a30aa113a2d2d4f42a7a975ec36c45e"
+  },
+  {
+    "path": "legal/graph_한국세법_2026.kg",
+    "bytes": 5661,
+    "sha256": "8b107d6691da07b50e0b018e9e034346de2b455d3fec26fe1949247189cd6685"
+  },
+  {
+    "path": "marco/knowledge/korean_tax/knowledge.v1.json",
+    "bytes": 8464,
+    "sha256": "ff6ace5449d5c9fa587f2dad3ca923b094d2dc2ae76b1563521333e1cbb4b99c"
+  }
+]

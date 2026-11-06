@@ -6,3 +6,11 @@ node_modules/
 .cache/
 outputs/
 dist/
+
+worker/marco-runtime/runtime/
+worker/marco-runtime/vendor/numpy.original.whl
+worker/marco-runtime/marco-files.json
+worker/marco-runtime/vendor/pyodide.asm.mjs
+worker/marco-runtime/vendor/pyodide.asm.original.mjs
+
+__pycache__/

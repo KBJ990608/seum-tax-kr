@@ -1,0 +1,56 @@
+[
+  {
+    "id": "ita-2",
+    "title": "상속세 및 증여세법 제2조 (정의)",
+    "url": "https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1032164667",
+    "effective_from": "2026-01-02",
+    "verified_on": "2026-11-06",
+    "authority": "국가법령정보센터",
+    "version": "법률 제21065호"
+  },
+  {
+    "id": "ita-25-2",
+    "title": "상속세 및 증여세법 제25조 제2항 (상속세 과세최저한)",
+    "url": "https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1029615619",
+    "effective_from": "2026-01-02",
+    "verified_on": "2026-11-06",
+    "authority": "국가법령정보센터",
+    "version": "법률 제21065호"
+  },
+  {
+    "id": "ita-55-2",
+    "title": "상속세 및 증여세법 제55조 제2항 (증여세 과세최저한)",
+    "url": "https://www.law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1029615901",
+    "effective_from": "2026-01-02",
+    "verified_on": "2026-11-06",
+    "authority": "국가법령정보센터",
+    "version": "법률 제21065호"
+  },
+  {
+    "id": "ita-26",
+    "title": "상속세 및 증여세법 제26조 (상속세 세율)",
+    "url": "https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1029615621",
+    "effective_from": "2026-01-02",
+    "verified_on": "2026-11-06",
+    "authority": "국가법령정보센터",
+    "version": "법률 제21065호"
+  },
+  {
+    "id": "ita-56",
+    "title": "상속세 및 증여세법 제56조 (제26조 세율 준용)",
+    "url": "https://law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1021775073",
+    "effective_from": "2026-01-02",
+    "verified_on": "2026-11-06",
+    "authority": "국가법령정보센터",
+    "version": "법률 제21065호"
+  },
+  {
+    "id": "nts-basic-rates",
+    "title": "국세청 증여세 항목별 설명: 일반 세율표",
+    "url": "https://www.nts.go.kr/nts/cm/cntnts/cntntsView.do?cntntsId=7960&mi=2227",
+    "effective_from": null,
+    "verified_on": "2026-11-06",
+    "authority": "국세청",
+    "version": "조회일 기준 안내, 일반 세율표만 사용"
+  }
+]

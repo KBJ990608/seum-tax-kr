@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateTax,parseMoney,proposeTaxInputs} from '../worker/tax.mjs';
 import {validateAnswer} from '../worker/core.mjs';
-import worker from '../dist/server/index.js';
+import worker from '../dist/server/application.js';
 import {localDB} from '../scripts/db-local.mjs';
 const origin='https://seum.example',cookie='seum_session='+'f'.repeat(64),request=(path,data,otherCookie=cookie)=>new Request(origin+path,{method:'POST',headers:{Origin:origin,Cookie:otherCookie,'Content-Type':'application/json'},body:JSON.stringify(data)});
 const base={tax_kind:'상속세',transaction_date:'2026-11-02',confirmed:true,inputs:{amount:1500000000,debt:0,prior:0,deduction:500000000}};

@@ -1,0 +1,82 @@
+[
+  {
+    "path": "runtime/_generator.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 523258,
+    "sha256": "3c3ee42ddcbfb5a3d9caf70c7fcb8e1f01d24ee08c9293124a672c68f8cba462"
+  },
+  {
+    "path": "runtime/lapack_lite.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 207529,
+    "sha256": "578be9fdfbc5f103bb978afe67ecfeffb413f6cb1e8419e136fa4f97398f7ebe"
+  },
+  {
+    "path": "runtime/_common.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 139272,
+    "sha256": "9b8afe8338fef7fe9a49d86f981f9fd607fac507ffbbc53c73c6f4225b23696d"
+  },
+  {
+    "path": "runtime/_philox.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 56614,
+    "sha256": "ab0fc28792ec6eb3d9b8f3c427ce210a6f2e6f4744e7b7adb2da0da055fce5bc"
+  },
+  {
+    "path": "runtime/_bounded_integers.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 139874,
+    "sha256": "b3355b64811cff5b3d41bcfa8ddb90a4c203d169e2910e6f897afbc4221523a7"
+  },
+  {
+    "path": "runtime/bit_generator.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 120390,
+    "sha256": "1b293c6ba5e0909d4a4363e75ccf2f5d2dcbd711ca8ddaa4910ecc11c70aa072"
+  },
+  {
+    "path": "runtime/_multiarray_umath.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 2154892,
+    "sha256": "f24e4d01250fc9d8bb4382727813914324a0bd792c3419f2dfade45e29830509"
+  },
+  {
+    "path": "runtime/_sfc64.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 39773,
+    "sha256": "bffdb1f5c6529feae6a4e3393589fb3827a03d851bb2d34869175267a58bd8a4"
+  },
+  {
+    "path": "runtime/mtrand.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 417581,
+    "sha256": "6b2b87ec5dfaabde723369d27845b6107bc76f2935d3456b365787b3aa81b13b"
+  },
+  {
+    "path": "runtime/_mt19937.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 59922,
+    "sha256": "d3ca63807aea4b0b2caf67122087fa6eadd6f0d84ff4e3bd12a896fa45c64d55"
+  },
+  {
+    "path": "runtime/_pocketfft_umath.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 260256,
+    "sha256": "ec3b6453b8720bb6369f279c02107893dad485ac13a831aa29ee096722773a1a"
+  },
+  {
+    "path": "runtime/numpy-python.zip",
+    "bytes": 1389231,
+    "sha256": "828dd1eec73ede1177e5594615102b1319eeb345547a3c66ba4766b3fb59c189"
+  },
+  {
+    "path": "runtime/_umath_linalg.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 1056155,
+    "sha256": "e10f1c9b69919c48a3abad91f0a227bb9dddea6ba3eac2f96a1aae4a08450a55"
+  },
+  {
+    "path": "runtime/pyodide.asm.wasm",
+    "bytes": 9598218,
+    "sha256": "cc36e3cab04fdfc9a63ff13eb52eae2b911bf46c025cc7b281f394bd3de1d5e6"
+  },
+  {
+    "path": "runtime/python_stdlib.zip",
+    "bytes": 2545637,
+    "sha256": "fa1957e5777068fc4f7437f96d860ae2fbe9c19732ba06c84e004ec16dd7dd7a"
+  },
+  {
+    "path": "runtime/_pcg64.cpython-314-wasm32-emscripten.so.wasm",
+    "bytes": 62180,
+    "sha256": "414becc8e97858aadaa8a2acc784573985c3356e145c7091ea407ca6422c7ab3"
+  }
+]

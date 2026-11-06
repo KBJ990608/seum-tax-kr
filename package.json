@@ -7,12 +7,14 @@
     "build": "node scripts/build.mjs",
     "dev": "node scripts/preview.mjs",
     "test": "node --test tests/*.test.mjs",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "test:runtime": "node scripts/test-marco-runtime.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "drizzle-kit": "^0.31.0",
     "drizzle-orm": "^0.44.0",
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.0",
+    "miniflare": "4.20260730.0"
   }
 }

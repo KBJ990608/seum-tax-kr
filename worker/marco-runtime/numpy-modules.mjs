@@ -1,0 +1,14 @@
+import m0 from './runtime/_multiarray_umath.cpython-314-wasm32-emscripten.so.wasm';
+import m1 from './runtime/_pocketfft_umath.cpython-314-wasm32-emscripten.so.wasm';
+import m2 from './runtime/_umath_linalg.cpython-314-wasm32-emscripten.so.wasm';
+import m3 from './runtime/lapack_lite.cpython-314-wasm32-emscripten.so.wasm';
+import m4 from './runtime/_bounded_integers.cpython-314-wasm32-emscripten.so.wasm';
+import m5 from './runtime/_common.cpython-314-wasm32-emscripten.so.wasm';
+import m6 from './runtime/_generator.cpython-314-wasm32-emscripten.so.wasm';
+import m7 from './runtime/_mt19937.cpython-314-wasm32-emscripten.so.wasm';
+import m8 from './runtime/_pcg64.cpython-314-wasm32-emscripten.so.wasm';
+import m9 from './runtime/_philox.cpython-314-wasm32-emscripten.so.wasm';
+import m10 from './runtime/_sfc64.cpython-314-wasm32-emscripten.so.wasm';
+import m11 from './runtime/bit_generator.cpython-314-wasm32-emscripten.so.wasm';
+import m12 from './runtime/mtrand.cpython-314-wasm32-emscripten.so.wasm';
+export default [["/lib/python3.14/site-packages/numpy/_core/_multiarray_umath.cpython-314-wasm32-emscripten.so",m0],["/lib/python3.14/site-packages/numpy/fft/_pocketfft_umath.cpython-314-wasm32-emscripten.so",m1],["/lib/python3.14/site-packages/numpy/linalg/_umath_linalg.cpython-314-wasm32-emscripten.so",m2],["/lib/python3.14/site-packages/numpy/linalg/lapack_lite.cpython-314-wasm32-emscripten.so",m3],["/lib/python3.14/site-packages/numpy/random/_bounded_integers.cpython-314-wasm32-emscripten.so",m4],["/lib/python3.14/site-packages/numpy/random/_common.cpython-314-wasm32-emscripten.so",m5],["/lib/python3.14/site-packages/numpy/random/_generator.cpython-314-wasm32-emscripten.so",m6],["/lib/python3.14/site-packages/numpy/random/_mt19937.cpython-314-wasm32-emscripten.so",m7],["/lib/python3.14/site-packages/numpy/random/_pcg64.cpython-314-wasm32-emscripten.so",m8],["/lib/python3.14/site-packages/numpy/random/_philox.cpython-314-wasm32-emscripten.so",m9],["/lib/python3.14/site-packages/numpy/random/_sfc64.cpython-314-wasm32-emscripten.so",m10],["/lib/python3.14/site-packages/numpy/random/bit_generator.cpython-314-wasm32-emscripten.so",m11],["/lib/python3.14/site-packages/numpy/random/mtrand.cpython-314-wasm32-emscripten.so",m12]];

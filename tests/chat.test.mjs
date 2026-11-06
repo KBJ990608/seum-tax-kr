@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker from '../dist/server/index.js';
+import worker from '../dist/server/application.js';
 import {localDB} from '../scripts/db-local.mjs';
 import {validateAnswer} from '../worker/core.mjs';
 const origin='https://seum.example',cookie='seum_session='+'c'.repeat(64);

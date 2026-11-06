@@ -16,3 +16,5 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+      - run: npm run test:runtime
+      - run: node worker/marco-runtime/frozen-clock-regression.mjs

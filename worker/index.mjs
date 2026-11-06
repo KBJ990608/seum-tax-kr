@@ -1,4 +1,4 @@
-import {marcoStatus,marcoEvaluate} from './marco.mjs';
+import {marcoStatus,marcoEvaluate,marcoQuestion} from './marco.mjs';
 import assets from 'virtual:seum-assets';
 import corpus from '../data/corpus.json';
 import indexedSources from '../data/indexed-sources.json';
@@ -58,6 +58,7 @@ async function api(request,env){
   await ensureSourceRelease(env);
   if(path==='/api/marco/status'&&method==='GET')return json(await marcoStatus(env));
   if(path==='/api/marco/evaluate'&&method==='POST'){if(env.DB)await quota(env,'marco:'+now().slice(0,10)+await hash(request.headers.get('cf-connecting-ip')||session(request)||'anonymous'),100);return json(await marcoEvaluate(env,await body(request)));}
+  if(path==='/api/marco/question'&&method==='POST'){if(env.DB)await quota(env,'marco:'+now().slice(0,10)+await hash(request.headers.get('cf-connecting-ip')||session(request)||'anonymous'),100);return json(await marcoQuestion(env,await body(request)));}
   if(path==='/api/health'){let db=false,counts=[];if(env.DB){try{counts=await rows(env.DB.prepare('SELECT kind,status,count(*) as count FROM documents GROUP BY kind,status'));db=true;}catch{}}return json({api_key_configured:!!env.OPENAI_API_KEY,database_ready:db,model:env.OPENAI_MODEL||'gpt-4.1-mini',sources:counts,prepared_sources:corpus.length,rag_ready:db&&counts.some(c=>c.status==='active'),live_research_enabled:env.SEUM_LIVE_RESEARCH==='true',research_provider:'국세청 국세법령정보시스템',issue_count:issues.length,expert_configured:!!env.EXPERT_EMAILS,answer_policy:'verified-retrieval-only'});}
   if(path==='/api/session'&&method==='POST'){let token=session(request);if(!token)token=[...crypto.getRandomValues(new Uint8Array(32))].map(b=>b.toString(16).padStart(2,'0')).join('');return json({ready:true},200,{'Set-Cookie':`seum_session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`});}
   if(path==='/api/library'&&method==='GET'){const list=env.DB?await rows(env.DB.prepare('SELECT id,title,kind,url,effective_from,effective_to,case_number,decision_date,status,verified_at,notes FROM documents ORDER BY kind,title')):[];return json({documents:list,prepared:corpus.map(({body,...doc})=>({...doc,status:'prepared'}))});}

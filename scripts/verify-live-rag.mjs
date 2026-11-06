@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import worker from '../dist/server/index.js';
+import worker from '../dist/server/application.js';
 import {localDB} from './db-local.mjs';
 const text=fs.readFileSync('.env.local','utf8'),manifest=JSON.parse(fs.readFileSync('data/indexed-sources.json','utf8'));
 const env={DB:localDB(),OPENAI_API_KEY:text.match(/^OPENAI_API_KEY=(.+)$/m)?.[1]?.trim(),OPENAI_ORGANIZATION:text.match(/^OPENAI_ORGANIZATION=(.+)$/m)?.[1]?.trim(),OPENAI_VECTOR_STORE_ID:manifest.store_id};

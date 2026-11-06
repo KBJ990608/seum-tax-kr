@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "runtime": "Cloudflare workerd via Miniflare",
+  "coldMs": 7951,
+  "nativeAnswers": 7,
+  "calculations": 14,
+  "concurrentAnswers": 7,
+  "outboundCalls": 0,
+  "inputAndDateRejections": 2,
+  "provenance": {
+    "configured": true,
+    "engine_verified": true,
+    "engine_commit": "c7d648a7fd952e750b8b3b0cb017d6b79ba27b13",
+    "knowledge_version": "marco-korean-tax-core-2026-11-06",
+    "knowledge_sha256": "ff6ace5449d5c9fa587f2dad3ca923b094d2dc2ae76b1563521333e1cbb4b99c",
+    "supported_from": "2026-01-02",
+    "verified_through": "2026-11-06",
+    "service_origin": null,
+    "runtime": "sites_worker_cpython_wasm",
+    "training_commit": "3a4383b9b52739f65d730dee0dba7cac2c274c18",
+    "execution_mode": "source_bound_rules_and_native_knowledge_graph"
+  },
+  "limitations": [
+    "Local runtime test, not production reliability or complete legal review"
+  ]
+}

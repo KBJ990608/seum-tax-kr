@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker from '../dist/server/index.js';
+import worker from '../dist/server/application.js';
 import {localDB} from '../scripts/db-local.mjs';
 import {validateAnswer,officialUrl,validDate,openai} from '../worker/core.mjs';
 import fs from 'node:fs';
