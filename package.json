@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "check:ui": "node --check public/app.js && node --check public/tax-ui.js && node --check public/pwa.js",
     "dev": "node scripts/preview.mjs",
     "test": "node --test tests/*.test.mjs",
     "db:generate": "drizzle-kit generate"
