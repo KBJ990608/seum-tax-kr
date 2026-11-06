@@ -24,3 +24,6 @@
   .tax-privacy-note{padding:12px}
 }
 @media(max-width:360px){.sidebar nav button span{font-size:10px}.tax-workflow span{font-size:9px;padding:8px 4px}}
+
+.tax-workflow [data-tax-step].current{background:#e7edff;border-color:#9eaff5;color:#2a4bc1;font-weight:700;box-shadow:inset 0 0 0 1px #c4d0ff}
+.tax-numbers .rag-form>label>small{font-size:11px;color:#8a6d43;line-height:1.6}
