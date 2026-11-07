@@ -1,6 +1,26 @@
 window.SeumMarco=(()=>{
  const E=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let status=null,version=0;
+ // Revisions catch edit-and-revert; snapshots catch silent programmatic edits.
+ // Request ownership keeps old completions from unlocking a replacement form.
+ const requests=new WeakMap();
+ function formState(form){if(!requests.has(form))requests.set(form,{revision:0,pending:null});return requests.get(form);}
+ const snapshot=form=>JSON.stringify([...new FormData(form)]);
+ function currentRequest(form,request){const state=formState(form);return form.isConnected&&state.pending===request&&state.revision===request.revision&&version===request.version&&snapshot(form)===request.snapshot;}
+ function updateButton(form,button,question=false){
+  if(!button)return;
+  const pending=form&&requests.get(form)?.pending,ready=status?.configured&&status?.engine_verified;
+  button.disabled=!!pending||!ready;
+  button.textContent=pending?(question?'MARCO 원본 판정 확인 중…':'MARCO 규칙 검증 중…'):ready?(question?'선택한 질문을 MARCO로 확인':'입력한 과세표준으로 MARCO 검증'):(question?'MARCO 연결 확인 후 질문 가능':'MARCO 연결 확인 후 검증 가능');
+ }
+ function invalidate(form,question=false){
+  if(form)formState(form).revision++;
+  const prefix=question?'#marcoQuestion':'#marco';
+  const result=document.querySelector(prefix+'Result'),error=document.querySelector(prefix+'Error');
+  if(result)result.innerHTML='';if(error)error.textContent='';
+ }
+ function beginRequest(form){const state=formState(form);return state.pending={revision:state.revision,version,snapshot:snapshot(form)};}
+ function finishRequest(form,request,button,question=false){const state=formState(form);if(state.pending!==request)return;state.pending=null;if(form.isConnected)updateButton(form,button,question);}
  // Canonical prompts from knowledge.v1.json, pack marco-korean-tax-core-2026-11-06. No answer text is embedded.
  const questionOptions=[{"id": "gift-minimum", "question": "증여세 과세최저한이 뭐야?"}, {"id": "inheritance-minimum", "question": "상속세 과세최저한이 뭐야?"}, {"id": "inheritance-definition", "question": "상속세와 증여세를 어떻게 구분해?"}, {"id": "gift-definition", "question": "증여의 뜻이 뭐야?"}, {"id": "death-gift", "question": "사인증여는 증여세야?"}, {"id": "base-not-assets", "question": "재산가액과 과세표준은 같아?"}, {"id": "same-rates-not-same-base", "question": "상속세와 증여세 세율이 같아?"}];
 
@@ -20,8 +40,35 @@ window.SeumMarco=(()=>{
   if(r.topic!==selectedTopic||typeof r.answer!=='string'||!r.answer.trim()||evidence?.engine!=='MARCO engine.Session'||evidence?.verdict!=='인정'||!hasPath)throw Error('원본 MARCO 판정·경로 또는 선택한 질문과의 일치를 확인하지 못했습니다. 답변을 표시하지 않습니다.');
   return `<div class="analysis-summary"><strong>선택한 세법 질문의 확인 답변</strong><p>${E(r.answer)}</p></div><p class="rag-help">세액 계산 결과가 아닙니다. 엔진 ${E(shortCommit(data.integration?.engine_commit))} · 지식 기준 ${E(data.integration?.knowledge_version||'미제공')}</p><details open><summary>원본 MARCO 판정과 경로</summary><p>${E(evidence.engine)} · ${E(evidence.verdict)}</p><p>${E(text(path))}</p>${evidence.graph_answer?`<p>그래프 답변: ${E(text(evidence.graph_answer))}</p>`:''}</details><ul>${list(r.sources).map(source=>{const url=officialURL(source?.url);return `<li>${url?`<a class="source-link" href="${E(url)}" target="_blank" rel="noopener">${E(source.title||source.id||'공식 근거')} ↗</a>`:E(text(source))}</li>`;}).join('')}</ul>${limits}`;
  }
- async function mount(){const target=document.querySelector('#marcoStatus');if(!target)return;const current=++version;status=null;const button=document.querySelector('#marcoForm button[type=submit]');button.disabled=true;const questionButton=document.querySelector('#marcoQuestionForm button[type=submit]');if(questionButton){questionButton.disabled=true;questionButton.textContent='MARCO 연결 확인 후 질문 가능';}target.textContent='연결 상태 확인 중';try{const data=await request('/api/marco/status');if(current!==version||!target.isConnected)return;status=data;const bounds=dateBounds(),dateInput=document.querySelector('#marcoForm [name=as_of]');if(dateInput){dateInput.min=bounds.from;dateInput.max=bounds.through;}const dateLabel=document.querySelector('#marcoDateRange');if(dateLabel)dateLabel.textContent=`검증 범위: ${bounds.from} ~ ${bounds.through}`;const ready=data.configured&&data.engine_verified;target.textContent=ready?'엔진 연결·버전 확인됨':'MARCO 연결 준비 중';document.querySelector('#marcoStatusDetail').textContent=ready?`${data.runtime==='sites_worker_cpython_wasm'?'이 Site 서버에서 원본 MARCO Python을 직접 실행합니다. OpenAI·별도 서버로 전송하거나 입력값을 저장하지 않습니다.':'외부 MARCO 서버: '+(data.service_origin||'주소 확인 필요')} 엔진 ${shortCommit(data.engine_commit)} · 세법 확장 ${shortCommit(data.training_commit)} · 지식 기준 ${data.knowledge_version||'미제공'}`:(data.reason||'MARCO 실행 상태가 확인되지 않았습니다. 기존 세액 계산은 아래에서 이용할 수 있습니다.');if(questionButton){questionButton.disabled=!ready;questionButton.textContent=ready?'선택한 질문을 MARCO로 확인':'MARCO 연결 확인 후 질문 가능';}const questionDate=document.querySelector('#marcoQuestionForm [name=as_of]');if(questionDate){questionDate.min=bounds.from;questionDate.max=bounds.through;}const questionRange=document.querySelector('#marcoQuestionDateRange');if(questionRange)questionRange.textContent=`검증 범위: ${bounds.from} ~ ${bounds.through}`;button.disabled=!ready;button.textContent=ready?'입력한 과세표준으로 MARCO 검증':'MARCO 연결 확인 후 검증 가능';}catch(error){if(current!==version||!target.isConnected)return;target.textContent='연결 확인 실패';document.querySelector('#marcoStatusDetail').textContent=error.message;button.textContent='MARCO 연결 확인 후 검증 가능';}
-  const label=document.querySelector('#taxEngineStatus');if(label)try{const health=await request('/api/health');if(!label.isConnected)return;label.textContent=health.api_key_configured?'기존 OpenAI 분석 · 키 등록됨, 실제 호출 결과 확인 필요':'기존 OpenAI 분석 · 연결 필요 (MARCO와 별도)';const analysisButton=document.querySelector('#taxAnalyzeForm button[type=submit]');if(analysisButton){analysisButton.disabled=!health.api_key_configured;if(!health.api_key_configured)analysisButton.textContent='OpenAI 연결 후 상황 분석 가능';}}catch{if(label.isConnected)label.textContent='기존 OpenAI 분석 · 연결 상태 확인 실패';}
+ async function mount(){
+  const target=document.querySelector('#marcoStatus');if(!target)return;
+  const current=++version;status=null;
+  const form=document.querySelector('#marcoForm'),questionForm=document.querySelector('#marcoQuestionForm');
+  const button=document.querySelector('#marcoForm button[type=submit]'),questionButton=document.querySelector('#marcoQuestionForm button[type=submit]');
+  invalidate(form);invalidate(questionForm,true);updateButton(form,button);updateButton(questionForm,questionButton,true);
+  target.textContent='연결 상태 확인 중';
+  try{
+   const data=await request('/api/marco/status');if(current!==version||!target.isConnected)return;
+   status=data;const bounds=dateBounds(),dateInput=document.querySelector('#marcoForm [name=as_of]');
+   if(dateInput){dateInput.min=bounds.from;dateInput.max=bounds.through;}
+   const dateLabel=document.querySelector('#marcoDateRange');if(dateLabel)dateLabel.textContent=`검증 범위: ${bounds.from} ~ ${bounds.through}`;
+   const ready=data.configured&&data.engine_verified;target.textContent=ready?'엔진 연결·버전 확인됨':'MARCO 연결 준비 중';
+   document.querySelector('#marcoStatusDetail').textContent=ready?`${data.runtime==='sites_worker_cpython_wasm'?'이 Site 서버에서 원본 MARCO Python을 직접 실행합니다. OpenAI·별도 서버로 전송하거나 입력값을 저장하지 않습니다.':'외부 MARCO 서버: '+(data.service_origin||'주소 확인 필요')} 엔진 ${shortCommit(data.engine_commit)} · 세법 확장 ${shortCommit(data.training_commit)} · 지식 기준 ${data.knowledge_version||'미제공'}`:(data.reason||'MARCO 실행 상태가 확인되지 않았습니다. 기존 세액 계산은 아래에서 이용할 수 있습니다.');
+   const questionDate=document.querySelector('#marcoQuestionForm [name=as_of]');if(questionDate){questionDate.min=bounds.from;questionDate.max=bounds.through;}
+   const questionRange=document.querySelector('#marcoQuestionDateRange');if(questionRange)questionRange.textContent=`검증 범위: ${bounds.from} ~ ${bounds.through}`;
+   updateButton(form,button);updateButton(questionForm,questionButton,true);
+  }catch(error){
+   if(current!==version||!target.isConnected)return;
+   target.textContent='연결 확인 실패';document.querySelector('#marcoStatusDetail').textContent=error.message;
+   updateButton(form,button);updateButton(questionForm,questionButton,true);
+  }
+  const label=document.querySelector('#taxEngineStatus');
+  if(label)try{
+   const health=await request('/api/health');if(current!==version||!label.isConnected)return;
+   label.textContent=health.api_key_configured?'기존 OpenAI 분석 · 키 등록됨, 실제 호출 결과 확인 필요':'기존 OpenAI 분석 · 연결 필요 (MARCO와 별도)';
+   const analysisButton=document.querySelector('#taxAnalyzeForm button[type=submit]');
+   if(analysisButton){analysisButton.disabled=!health.api_key_configured||analysisButton.dataset?.pending==='true';if(!health.api_key_configured)analysisButton.textContent='OpenAI 연결 후 상황 분석 가능';}
+  }catch{if(current===version&&label.isConnected)label.textContent='기존 OpenAI 분석 · 연결 상태 확인 실패';}
  }
  function resultView(data){
   const r=data.result;if(!r)throw Error('검증 결과를 확인하지 못했습니다. 결과를 적용하지 않았습니다.');
@@ -33,9 +80,44 @@ window.SeumMarco=(()=>{
   return `<div class="tax-calculation-result"><span>MARCO 기본세율 검증 · ${E(r.tax_type==='gift'?'증여세':r.tax_type==='inheritance'?'상속세':'세목 확인 필요')}</span>${computed?`<strong>${r.basic_tax_won.toLocaleString('ko-KR')}<small>원</small></strong><p>최종 납부세액이 아닙니다. ${E(labels[r.status])}${r.below_minimum?' · 과세최저한 미만':''}</p>`:`<h3>${E(labels[r.status])}</h3><p>${E(describe(r.reason||r.message||'지원 조건과 입력값을 확인해 주세요.'))}</p><p>기본세액을 산출하지 않았습니다. 0원 계산 결과가 아닙니다.</p>`}</div><p class="rag-help">출처 기반 규칙 모듈 · 엔진 ${E(shortCommit(data.integration?.engine_commit))} · 지식 기준 ${E(data.integration?.knowledge_version||'미제공')}</p><details><summary>적용 규칙과 근거 확인</summary><ul>${items(r.rule_trace).map(x=>`<li>${E(describe(x))}</li>`).join('')}</ul><ul>${items(r.sources).map(x=>`<li>${sourceView(x)}</li>`).join('')}</ul></details><div class="notice"><strong>적용 가정·한계</strong><ul>${[...items(r.assumptions),...items(r.limitations)].map(x=>`<li>${E(describe(x))}</li>`).join('')}</ul></div>`;
  }
  document.addEventListener('click',event=>{if(event.target.closest('#marcoRefresh'))mount();});
- document.addEventListener('input',event=>{if(event.target.closest('#marcoForm')){document.querySelector('#marcoResult').innerHTML='';if(event.target.name!=='marco_consent')document.querySelector('#marcoForm [name=marco_consent]').checked=false;}});
- document.addEventListener('submit',async event=>{if(event.target.id!=='marcoForm')return;event.preventDefault();const form=event.target,button=form.querySelector('button[type=submit]'),error=document.querySelector('#marcoError');if(button.disabled||!status?.configured||!status?.engine_verified)return;const values=Object.fromEntries(new FormData(form)),amount=Number(values.tax_base_won);if(values.marco_consent!=='on'||!Number.isSafeInteger(amount)||amount<0||values.tax_base_won.trim()===''){error.textContent='과세표준 금액과 MARCO 처리 안내 동의를 확인해 주세요.';return;}const bounds=dateBounds();if(!/^\d{4}-\d{2}-\d{2}$/.test(values.as_of)||values.as_of<bounds.from||values.as_of>bounds.through){error.textContent=`검증 가능한 적용일은 ${bounds.from}부터 ${bounds.through}까지입니다.`;return;}button.disabled=true;error.textContent='';button.textContent='MARCO 규칙 검증 중…';try{const data=await request('/api/marco/evaluate',{tax_type:values.tax_type,as_of:values.as_of,amount_kind:'tax_base',tax_base_won:amount,basic_rate_only:true,consent:true});if(!form.isConnected)return;document.querySelector('#marcoResult').innerHTML=resultView(data);}catch(e){if(form.isConnected)error.textContent=e.message;}finally{if(form.isConnected){button.disabled=false;button.textContent='입력한 과세표준으로 MARCO 검증';}}});
- document.addEventListener('input',event=>{if(event.target.closest('#marcoQuestionForm')){document.querySelector('#marcoQuestionResult').innerHTML='';if(event.target.name!=='marco_question_consent')document.querySelector('#marcoQuestionForm [name=marco_question_consent]').checked=false;}});
- document.addEventListener('submit',async event=>{if(event.target.id!=='marcoQuestionForm')return;event.preventDefault();const form=event.target,button=form.querySelector('button[type=submit]'),error=document.querySelector('#marcoQuestionError');if(button.disabled||!status?.configured||!status?.engine_verified)return;const values=Object.fromEntries(new FormData(form)),selected=questionOptions.find(item=>item.question===values.question),bounds=dateBounds();error.textContent='';document.querySelector('#marcoQuestionResult').innerHTML='';if(!selected||values.marco_question_consent!=='on'){error.textContent='등록된 질문과 MARCO 처리 안내 동의를 확인해 주세요.';return;}if(!/^\d{4}-\d{2}-\d{2}$/.test(values.as_of)||values.as_of<bounds.from||values.as_of>bounds.through){error.textContent=`검증 가능한 적용일은 ${bounds.from}부터 ${bounds.through}까지입니다.`;return;}button.disabled=true;button.textContent='MARCO 원본 판정 확인 중…';try{const data=await request('/api/marco/question',{question:selected.question,as_of:values.as_of,consent:true});if(form.isConnected)document.querySelector('#marcoQuestionResult').innerHTML=questionResultView(data,selected.id);}catch(e){if(form.isConnected)error.textContent=e.message;}finally{if(form.isConnected){button.disabled=!status?.configured||!status?.engine_verified;button.textContent=button.disabled?'MARCO 연결 확인 후 질문 가능':'선택한 질문을 MARCO로 확인';}}});
+ function onEdit(event){
+  const form=event.target.closest('#marcoForm')||event.target.closest('#marcoQuestionForm');if(!form)return;
+  const question=form.id==='marcoQuestionForm',consent=question?'marco_question_consent':'marco_consent';
+  invalidate(form,question);
+  if(event.target.name!==consent)form.querySelector(`[name=${consent}]`).checked=false;
+ }
+ document.addEventListener('input',onEdit);
+ document.addEventListener('change',onEdit);
+ document.addEventListener('submit',async event=>{
+  if(event.target.id!=='marcoForm')return;event.preventDefault();
+  const form=event.target,button=form.querySelector('button[type=submit]'),error=document.querySelector('#marcoError');
+  if(formState(form).pending||button.disabled||!status?.configured||!status?.engine_verified)return;
+  error.textContent='';document.querySelector('#marcoResult').innerHTML='';
+  const values=Object.fromEntries(new FormData(form)),amount=Number(values.tax_base_won);
+  if(values.marco_consent!=='on'||!Number.isSafeInteger(amount)||amount<0||values.tax_base_won.trim()===''){error.textContent='과세표준 금액과 MARCO 처리 안내 동의를 확인해 주세요.';return;}
+  const bounds=dateBounds();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(values.as_of)||values.as_of<bounds.from||values.as_of>bounds.through){error.textContent=`검증 가능한 적용일은 ${bounds.from}부터 ${bounds.through}까지입니다.`;return;}
+  const pending=beginRequest(form);updateButton(form,button);
+  try{
+   const data=await request('/api/marco/evaluate',{tax_type:values.tax_type,as_of:values.as_of,amount_kind:'tax_base',tax_base_won:amount,basic_rate_only:true,consent:true});
+   if(!currentRequest(form,pending))return;document.querySelector('#marcoResult').innerHTML=resultView(data);
+  }catch(e){if(currentRequest(form,pending))error.textContent=e.message;}
+  finally{finishRequest(form,pending,button);}
+ });
+ document.addEventListener('submit',async event=>{
+  if(event.target.id!=='marcoQuestionForm')return;event.preventDefault();
+  const form=event.target,button=form.querySelector('button[type=submit]'),error=document.querySelector('#marcoQuestionError');
+  if(formState(form).pending||button.disabled||!status?.configured||!status?.engine_verified)return;
+  const values=Object.fromEntries(new FormData(form)),selected=questionOptions.find(item=>item.question===values.question),bounds=dateBounds();
+  error.textContent='';document.querySelector('#marcoQuestionResult').innerHTML='';
+  if(!selected||values.marco_question_consent!=='on'){error.textContent='등록된 질문과 MARCO 처리 안내 동의를 확인해 주세요.';return;}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(values.as_of)||values.as_of<bounds.from||values.as_of>bounds.through){error.textContent=`검증 가능한 적용일은 ${bounds.from}부터 ${bounds.through}까지입니다.`;return;}
+  const pending=beginRequest(form);updateButton(form,button,true);
+  try{
+   const data=await request('/api/marco/question',{question:selected.question,as_of:values.as_of,consent:true});
+   if(currentRequest(form,pending))document.querySelector('#marcoQuestionResult').innerHTML=questionResultView(data,selected.id);
+  }catch(e){if(currentRequest(form,pending))error.textContent=e.message;}
+  finally{finishRequest(form,pending,button,true);}
+ });
  return {page,mount};
 })();

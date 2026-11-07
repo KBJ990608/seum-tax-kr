@@ -36,6 +36,13 @@ function binariesValid(){
  return runtimeManifest.every(item=>{const file=path.join(runtimeRoot,'runtime',path.basename(item.path));if(!fs.existsSync(file))return false;const bytes=fs.readFileSync(file);return bytes.length===item.bytes&&createHash('sha256').update(bytes).digest('hex')===item.sha256;});}
 if(!binariesValid())execFileSync('python3',[path.join(runtimeRoot,'prepare-runtime.py'),'--cache',path.join(root,'.cache/marco-runtime')],{stdio:'inherit'});
 if(!binariesValid())throw Error('MARCO runtime files failed checksums');
+// Keep the edge validation contract synchronized with the exact pinned Python
+// pack. It validates evidence; the actual answer still comes from MARCO.
+const sourceFiles=JSON.parse(fs.readFileSync(path.join(runtimeRoot,'marco-files.json'),'utf8'));
+const packText=sourceFiles['marco/knowledge/korean_tax/knowledge.v1.json'],pack=JSON.parse(packText);
+const expectedEvidence={knowledge_sha256:createHash('sha256').update(packText).digest('hex'),tax_types:pack.tax_types,facts:pack.facts.map(({questions,...fact})=>fact)};
+if(JSON.stringify(JSON.parse(fs.readFileSync('data/marco-evidence-contract.json','utf8')))!==JSON.stringify(expectedEvidence))throw Error('MARCO evidence contract differs from pinned knowledge pack');
+
 await build({entryPoints:[path.join(runtimeRoot,'adapter.mjs')],outfile:'dist/server/marco-runtime.js',bundle:true,format:'esm',platform:'browser',target:'es2022',external:['node:*','ws'],plugins:[{name:'compiled-runtime-modules',setup(b){b.onResolve({filter:/\.(wasm|zip)$/},args=>({path:'./runtime/'+path.basename(args.path).replace(/\.zip$/,'.bin'),external:true}));}}]});
 fs.mkdirSync('dist/server/runtime',{recursive:true});
 for(const item of runtimeManifest)fs.copyFileSync(path.join(runtimeRoot,'runtime',path.basename(item.path)),path.join(root,'dist/server/runtime',path.basename(item.path).replace(/\.zip$/,'.bin')));

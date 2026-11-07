@@ -37,3 +37,16 @@ button:disabled{cursor:not-allowed}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
 .marco-panel{margin-block:24px;border-color:#b6c6ef}.marco-panel h2{font-size:20px;margin:8px 0}.marco-panel .rag-form{margin-top:18px}.marco-panel details{margin-top:18px}.marco-panel li{overflow-wrap:anywhere}#marcoError{color:#923e29}#taxEngineStatus{white-space:normal}.marco-panel button:disabled{background:#e9edf5;color:#52637b;box-shadow:none}
+
+/* Let native date/select controls and money fields shrink with their grid cells. */
+.tax-field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.rag-form,.rag-form label,.tax-field-grid>*{min-width:0}
+.rag-form input,.rag-form select,.rag-form textarea{min-width:0;max-width:100%}
+.tax-money-input{min-width:0}.tax-money-input input{flex:1;min-width:0}
+.marco-panel{min-width:0;overflow-wrap:anywhere}
+.rag-form button:disabled{cursor:not-allowed}
+@media(max-width:800px){.tax-field-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Keep short mobile actions comfortably operable without precise tapping. */
+.install-app,.chat-new,.research-tax-tabs button,.expert-tabs button{min-height:44px}
+.chat-mobile-tabs button{min-width:44px;min-height:44px}

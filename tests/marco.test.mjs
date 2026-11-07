@@ -27,3 +27,26 @@ test('Sites local runtime uses no network and retains separate training provenan
  let calls=[];const e={__marcoRuntime:{health:async()=>({...fixture.health,runtime:'sites_worker_cpython_wasm',training_commit:'3a4383b9b52739f65d730dee0dba7cac2c274c18'}),dispatch:async(path,input)=>{calls.push({path,input});return fixture.success;}}};
  const out=await marcoEvaluate(e,scenario);assert.equal(out.result.basic_tax_won,0);assert.equal(out.integration.runtime,'sites_worker_cpython_wasm');assert.equal(out.integration.service_origin,null);assert.equal(calls[0].path,'/evaluate');
 });
+
+test('calculation evidence must cite the applied tax-specific rule, not merely an allowed source',async()=>{
+ const unrelated=fixture.question.sources[0];
+ for(const patch of [
+  {sources:[unrelated],source_ids:[unrelated.id],rule_trace:['placeholder without applied rule']},
+  {rule_trace:[{...fixture.success.rule_trace[0],right_won:500001}]},
+  {rule_trace:[{...fixture.success.rule_trace[0],result:false}]},
+  {rule_trace:[{...fixture.success.rule_trace[0],source_ids:['ita-2']}]},
+  {rate_percent:10},{progressive_deduction_won:0},
+  {source_ids:[...fixture.success.source_ids,...fixture.success.source_ids]},
+ ])await assert.rejects(marcoEvaluate(env({...fixture.success,...patch}),scenario),e=>e.code==='MARCO_RESULT_UNVERIFIED');
+});
+test('question proof must match the pinned answer, exact fact trace and connected graph path',async()=>{
+ const input={question:MARCO_QUESTIONS['death-gift'],as_of:'2026-11-06',consent:true};
+ for(const patch of [
+  {answer:'다른 답변',native_evidence:{...fixture.question.native_evidence,graph_answer:'다른 답변'}},
+  {rule_trace:[{...fixture.question.rule_trace[0],fact_id:'gift-minimum'}]},
+  {source_ids:fixture.success.source_ids,sources:fixture.success.sources},
+  {native_evidence:{...fixture.question.native_evidence,path:[['a','b','c'],['x','y','z']]}},
+  {native_evidence:{...fixture.question.native_evidence,graph_node:'gift_minimum'}},
+  {tax_type:'gift'},
+ ])await assert.rejects(marcoQuestion(env({...fixture.question,...patch}),input),e=>e.code==='MARCO_RESULT_UNVERIFIED');
+});

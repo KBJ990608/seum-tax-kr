@@ -12,18 +12,49 @@ async function cached(env,key,ttl,load){
   if(env.DB){try{await env.DB.prepare('INSERT INTO source_cache (key,payload,expires_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET payload=excluded.payload,expires_at=excluded.expires_at').bind(id,JSON.stringify(data),new Date(Date.now()+ttl).toISOString()).run();}catch{/* The verified response remains usable without cache persistence. */}}
   return data;
 }
-export async function ntsAction(env,actionId,paramData){
-  let response;
-  for(let attempt=0;attempt<2;attempt++){
-    const remaining=env.__officialDeadline?env.__officialDeadline-Date.now():18000;if(remaining<200)throw new ApiError(502,'OFFICIAL_SEARCH_TIME_BUDGET','공식 자료 조회 제한 시간에 도달해 확인한 범위만 검토합니다.');
-    try{response=await(env.__officialFetch||fetch)(base+'/action.do',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Referer:base+'/is/USEISA001M.do'},body:new URLSearchParams({actionId,paramData:JSON.stringify(paramData)}),signal:AbortSignal.timeout(Math.max(1,Math.min(6000,remaining)))});}catch{if(attempt===1)throw new ApiError(502,'OFFICIAL_SOURCE_UNAVAILABLE','국세청 공식 자료 서버에 연결하지 못했습니다. 조회 실패를 자료 없음으로 판단하지 않습니다.');}
-    if(response&&response.status<500)break;
-    if(attempt===0){if(response?.body)await response.body.cancel();response=null;await new Promise(resolve=>setTimeout(resolve,350));}
-  }
-  if(!response?.ok)throw new ApiError(502,'OFFICIAL_SOURCE_HTTP_'+(response?.status||'UNAVAILABLE'),'국세청 공식 자료 조회에 실패했습니다.');
-  let result;try{result=await response.json();}catch{throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 자료 응답 형식이 변경되어 원문 검증을 보류했습니다.');}
-  if(!result||result.status!=='SUCCESS'||!result.data||typeof result.data!=='object'||!(actionId in result.data)||!result.data[actionId]||typeof result.data[actionId]!=='object')throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 검색 응답을 검증하지 못했습니다.');return result.data[actionId];
+// Body consumption is part of the timed attempt: receiving headers is not a
+// successful read. Large official detail responses can arrive in many chunks.
+const maxOfficialBodyBytes=8*1024*1024;
+async function officialText(response){
+  const reader=response.body?.getReader();if(!reader)return '';
+  const decoder=new TextDecoder('utf-8',{ignoreBOM:true}),parts=[];let size=0;
+  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>maxOfficialBodyBytes){await reader.cancel();throw new ApiError(502,'OFFICIAL_SOURCE_TOO_LARGE','공식 원문 응답이 안전한 처리 크기를 초과해 검증을 보류했습니다.');}parts.push(decoder.decode(value,{stream:true}));}parts.push(decoder.decode());return parts.join('');}finally{reader.releaseLock();}
 }
+function officialDiagnostic(env,actionId,attempt,response,error,text){
+  // Only transport metadata and coarse classification. Never log the query,
+  // body, cookies, tokens, arbitrary error messages or document identifiers.
+  const prefix=text?.trimStart();
+  const diagnostic={action:actionId,attempt:attempt+1,status:response?.status||null,error_type:['TimeoutError','AbortError','SyntaxError','TypeError'].includes(error?.name)?error.name:'Other',content_type:response?.headers?.get('content-type')?.slice(0,100)||null,content_encoding:response?.headers?.get('content-encoding')?.slice(0,30)||null,declared_bytes:/^\d+$/.test(response?.headers?.get('content-length')||'')?Number(response.headers.get('content-length')):null,decoded_characters:typeof text==='string'?text.length:null,body_kind:typeof text!=='string'?'unread':!prefix?'empty':prefix.startsWith('<')?'html':/^[{[]/.test(prefix)?'json_like':'other',leading_bom:text?.charCodeAt(0)===0xfeff};
+  if(typeof env.__officialDiagnostic==='function')env.__officialDiagnostic(diagnostic);else console.warn('official_source_read',diagnostic);
+}
+export async function ntsAction(env,actionId,paramData){
+  const deadline=env.__officialDeadline||Date.now()+18000;
+  for(let attempt=0;attempt<2;attempt++){
+    const remaining=deadline-Date.now();if(remaining<200)throw new ApiError(502,'OFFICIAL_SEARCH_TIME_BUDGET','공식 자료 조회 제한 시간에 도달해 확인한 범위만 검토합니다.');
+    let response,text;
+    try{
+      response=await(env.__officialFetch||fetch)(base+'/action.do',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Referer:base+'/is/USEISA001M.do'},body:new URLSearchParams({actionId,paramData:JSON.stringify(paramData)}),signal:AbortSignal.timeout(Math.max(1,Math.min(12000,remaining)))});
+      if(!response.ok){if(response.body)await response.body.cancel();throw new ApiError(502,'OFFICIAL_SOURCE_HTTP_'+response.status,'국세청 공식 자료 조회에 실패했습니다.');}
+      text=await officialText(response);
+      // JSON may legally be preceded by a UTF-8 BOM from a legacy server.
+      const result=JSON.parse(text.replace(/^\uFEFF/,''));
+      if(!result||result.status!=='SUCCESS'||!result.data||typeof result.data!=='object'||!(actionId in result.data)||!result.data[actionId]||typeof result.data[actionId]!=='object')throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 검색 응답을 검증하지 못했습니다.');
+      return result.data[actionId];
+    }catch(error){
+      officialDiagnostic(env,actionId,attempt,response,error,text);
+      // Never retry access denial or reinterpret HTML as evidence. Only a
+      // transient connection/body-stream failure or HTTP 5xx gets one retry.
+      const timeout=['AbortError','TimeoutError'].includes(error?.name);
+      const retryable=(!(error instanceof ApiError)&&!(error instanceof SyntaxError))||/^OFFICIAL_SOURCE_HTTP_5\d\d$/.test(error?.code||'');
+      if(attempt===0&&retryable&&deadline-Date.now()>550){await new Promise(resolve=>setTimeout(resolve,350));continue;}
+      if(error instanceof ApiError)throw error;
+      if(error instanceof SyntaxError)throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 자료가 검증 가능한 JSON 원문으로 응답하지 않아 검증을 보류했습니다.');
+      if(timeout)throw new ApiError(502,'OFFICIAL_SOURCE_TIMEOUT','국세청 공식 원문 수신 시간이 초과되었습니다. 조회 실패를 자료 없음으로 판단하지 않습니다.');
+      throw new ApiError(502,'OFFICIAL_SOURCE_UNAVAILABLE','국세청 공식 자료 서버에서 원문을 끝까지 받지 못했습니다. 조회 실패를 자료 없음으로 판단하지 않습니다.');
+    }
+  }
+}
+
 export function searchItem(row,collection){
   const id=String(row.DOC_ID||'');
   if(collection==='statute'){

@@ -1,3 +1,4 @@
+import evidenceContract from '../data/marco-evidence-contract.json' with {type:'json'};
 import sourceCatalog from '../data/marco-sources.json' with {type:'json'};
 import {ApiError,officialUrl,validDate} from './core.mjs';
 import {calculateTax} from './tax.mjs';
@@ -37,8 +38,27 @@ export async function marcoEvaluate(env,input){
  if(result.status==='computed'){
   const check=calculateTax({tax_kind:input.tax_type==='gift'?'증여세':'상속세',transaction_date:date,confirmed:true,inputs:{amount:input.tax_base_won,debt:0,prior:0,deduction:0}});
   if(result.tax_type!==input.tax_type||result.as_of!==date||result.tax_base_won!==input.tax_base_won||!Number.isSafeInteger(result.basic_tax_won)||result.basic_tax_won!==check.calculated_tax||result.below_minimum!==(input.tax_base_won<500000)||!result.source_ids.length||!result.rule_trace.length)throw new ApiError(502,'MARCO_RESULT_UNVERIFIED','MARCO 응답과 확인한 입력·산술 결과가 일치하지 않아 결과를 보류했습니다.');
+  verifyCalculationEvidence(result,input,check);
  }else if(result.basic_tax_won!==null)throw new ApiError(502,'MARCO_RESULT_UNVERIFIED','MARCO가 보류한 요청에 세액이 포함되어 결과를 사용하지 않습니다.');
  return {result,integration};
+}
+
+// A catalogue-valid URL is not sufficient: the cited rules must establish this
+// particular result. This is a contract check, not a substitute for MARCO.
+function sameValue(a,b){
+ if(a===b)return true;
+ if(!a||!b||typeof a!=='object'||typeof b!=='object'||Array.isArray(a)!==Array.isArray(b))return false;
+ const keys=Object.keys(a);return keys.length===Object.keys(b).length&&keys.every(key=>Object.hasOwn(b,key)&&sameValue(a[key],b[key]));
+}
+function evidenceMatches(result,ids,trace){
+ return evidenceContract.knowledge_sha256===MARCO_CONTRACT.knowledge_sha256&&sameValue(result.source_ids,ids)&&sameValue(result.sources.map(s=>s.id),ids)&&sameValue(result.rule_trace,trace);
+}
+function verifyCalculationEvidence(result,input,check){
+ const rule=evidenceContract.tax_types[input.tax_type],below=input.tax_base_won<rule.minimum_tax_base_won;
+ const ids=[rule.minimum_source_id,...(below?[]:rule.rate_source_ids)];
+ const trace=[{rule_id:input.tax_type+'-minimum',source_ids:[rule.minimum_source_id],operation:'lt',left_won:input.tax_base_won,right_won:rule.minimum_tax_base_won,result:below}];
+ if(!below)trace.push({rule_id:'basic-rate',source_ids:rule.rate_source_ids,rate_percent:check.rate_percent,progressive_deduction_won:check.progressive_deduction,exact_tax_won_numerator:Number(BigInt(input.tax_base_won)*BigInt(check.rate_percent)-BigInt(check.progressive_deduction)*100n),exact_tax_won_denominator:100,display_rounding:'floor_to_whole_won'});
+ if(!evidenceMatches(result,ids,trace)||result.rate_percent!==(below?null:check.rate_percent)||result.progressive_deduction_won!==(below?null:check.progressive_deduction))throw new ApiError(502,'MARCO_RESULT_UNVERIFIED','MARCO 계산 근거가 적용한 세목·과세최저한·세율과 일치하지 않아 결과를 보류했습니다.');
 }
 
 function validateResult(result,statuses){
@@ -69,6 +89,8 @@ export async function marcoQuestion(env,input){
  if(result.basic_tax_won!==null)throw new ApiError(502,'MARCO_RESULT_UNVERIFIED','질문 검증을 세액 계산으로 사용하지 않습니다.');
  if(result.status==='answered'){
   const evidence=result.native_evidence;
+  const fact=evidenceContract.facts.find(f=>f.id===topic),node=topic.replaceAll('-','_');
+  if(!fact||result.answer!==fact.answer||result.tax_type!==fact.tax_type||!evidenceMatches(result,fact.source_ids,[{rule_id:'fact-lookup',fact_id:topic,source_ids:fact.source_ids}])||evidence?.graph_node!==node||evidence?.evidence_node!=='질문_'+node||!sameValue(evidence?.path,[['질문_'+node,'확인함',node],[node,'이어짐','검증된세법설명']])||evidence?.graph_answer!=='2026-01-02부터 2026-11-06까지 확인한 제한 지식입니다. '+fact.answer)throw new ApiError(502,'MARCO_RESULT_UNVERIFIED','MARCO 설명·출처·지식그래프 경로가 확인한 질문과 일치하지 않아 답변을 보류했습니다.');
   if(result.topic!==topic||result.as_of!==date||typeof result.answer!=='string'||!result.answer||!result.source_ids.length||evidence?.engine!=='MARCO engine.Session'||evidence.verdict!=='인정'||evidence.declared_question!==input.question||typeof evidence.graph_answer!=='string'||!evidence.graph_answer.includes(result.answer)||!Array.isArray(evidence.path)||evidence.path.length<2||evidence.path.some(edge=>!Array.isArray(edge)||edge.length!==3||edge.some(node=>typeof node!=='string')))throw new ApiError(502,'MARCO_RESULT_UNVERIFIED','MARCO 원본 지식그래프의 확인 경로가 일치하지 않아 답변을 보류했습니다.');
  }
  return {result,integration};

@@ -1,0 +1,87 @@
+{
+  "knowledge_sha256": "ff6ace5449d5c9fa587f2dad3ca923b094d2dc2ae76b1563521333e1cbb4b99c",
+  "tax_types": {
+    "gift": {
+      "label": "증여세",
+      "minimum_tax_base_won": 500000,
+      "minimum_operator": "lt",
+      "minimum_source_id": "ita-55-2",
+      "rate_source_ids": [
+        "ita-56",
+        "ita-26"
+      ]
+    },
+    "inheritance": {
+      "label": "상속세",
+      "minimum_tax_base_won": 500000,
+      "minimum_operator": "lt",
+      "minimum_source_id": "ita-25-2",
+      "rate_source_ids": [
+        "ita-26"
+      ]
+    }
+  },
+  "facts": [
+    {
+      "id": "gift-minimum",
+      "tax_type": "gift",
+      "source_ids": [
+        "ita-55-2"
+      ],
+      "answer": "증여세는 재산가액이 아니라 공제 등을 반영한 과세표준이 50만원 미만일 때 부과하지 않습니다. 정확히 50만원이면 이 과세최저한 미달에 해당하지 않습니다."
+    },
+    {
+      "id": "inheritance-minimum",
+      "tax_type": "inheritance",
+      "source_ids": [
+        "ita-25-2"
+      ],
+      "answer": "상속세도 과세표준이 50만원 미만이면 부과하지 않습니다. 근거는 증여세 제55조가 아니라 상속세 및 증여세법 제25조 제2항입니다."
+    },
+    {
+      "id": "inheritance-definition",
+      "tax_type": "inheritance",
+      "source_ids": [
+        "ita-2"
+      ],
+      "answer": "상속세 및 증여세법상 상속에는 민법상 상속뿐 아니라 유증과 사인증여 등이 포함됩니다. 살아 있을 때 받은 재산과 사망으로 효력이 생긴 이전을 구분해야 하며, 사실관계가 부족하면 세목을 확정할 수 없습니다."
+    },
+    {
+      "id": "gift-definition",
+      "tax_type": "gift",
+      "source_ids": [
+        "ita-2"
+      ],
+      "answer": "상속세 및 증여세법상 증여는 명칭이나 형식과 관계없이 무상 재산·이익 이전 또는 타인 재산가치 증가를 포함합니다. 유증과 사인증여, 유언대용신탁, 수익자연속신탁은 이 정의에서 제외됩니다."
+    },
+    {
+      "id": "death-gift",
+      "tax_type": "inheritance",
+      "source_ids": [
+        "ita-2"
+      ],
+      "answer": "유증과 사인증여는 상속세 및 증여세법상 상속의 범위에 포함됩니다. 이름에 증여가 들어간다는 이유만으로 증여세로 분류하면 안 됩니다."
+    },
+    {
+      "id": "base-not-assets",
+      "tax_type": null,
+      "source_ids": [
+        "ita-25-2",
+        "ita-55-2"
+      ],
+      "answer": "재산가액과 과세표준은 다릅니다. 상속세·증여세의 과세표준은 각 세목의 과세가액에서 해당 공제 등을 반영해 정합니다. 50만원 기준을 총재산가액이나 산출세액에 적용하지 않습니다."
+    },
+    {
+      "id": "same-rates-not-same-base",
+      "tax_type": null,
+      "source_ids": [
+        "ita-56",
+        "ita-26",
+        "ita-25-2",
+        "ita-55-2",
+        "nts-basic-rates"
+      ],
+      "answer": "증여세 일반 세율은 상속세 및 증여세법 제56조가 제26조의 세율을 적용하도록 정합니다. 세율표가 같아도 상속·증여의 과세가액과 공제 규정은 다르므로 같은 총재산에 같은 공제를 넣어 계산할 수 없습니다."
+    }
+  ]
+}

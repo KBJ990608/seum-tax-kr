@@ -12,7 +12,7 @@ try{
  for(const [topic,question]of Object.entries(MARCO_QUESTIONS)){
   const r=await request('/api/marco/question',{question,as_of:'2026-11-06',consent:true});assert.equal(r.status,200,JSON.stringify({topic,response:r.data}));assert.equal(r.data.result.topic,topic);assert.equal(r.data.result.native_evidence.engine,'MARCO engine.Session');nativeAnswers++;
  }
- for(const tax_type of ['gift','inheritance'])for(const tax_base_won of [0,499999,500000,500001,100000000,100000001,600000000]){
+ for(const tax_type of ['gift','inheritance'])for(const tax_base_won of [0,499999,500000,500001,100000000,100000001,500000000,500000001,600000000,1000000000,1000000001,3000000000,3000000001,999999999999999,1000000000000000]){
   const r=await request('/api/marco/evaluate',{tax_type,as_of:'2026-11-06',amount_kind:'tax_base',tax_base_won,basic_rate_only:true,consent:true});assert.equal(r.status,200);assert.equal(r.data.result.status,'computed');assert.equal(r.data.result.below_minimum,tax_base_won<500000);calculations++;
  }
  const concurrent=await Promise.all(Object.values(MARCO_QUESTIONS).map(question=>request('/api/marco/question',{question,as_of:'2026-11-06',consent:true})));assert.ok(concurrent.every(r=>r.status===200));
