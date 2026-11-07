@@ -1,7 +1,7 @@
 {
   "passed": true,
   "runtime": "Cloudflare workerd via Miniflare",
-  "coldMs": 5918,
+  "coldMs": 6383,
   "nativeAnswers": 7,
   "calculations": 30,
   "concurrentAnswers": 7,

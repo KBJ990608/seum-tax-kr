@@ -86,6 +86,17 @@ export function relatedLawReferences(entries,body=''){
   const names='상속세\\s*및\\s*증여세법|조세특례제한법|국제조세조정에\\s*관한\\s*법률|지방세특례제한법|국세기본법|국세징수법|소득세법|법인세법|부가가치세법|지방세법|민법|상법';
   const pattern=new RegExp('(?<![가-힣A-Za-z])('+names+')(?:\\s*(시행령|시행규칙))?\\s*[」』]?\\s*제\\s*(\\d+)\\s*조(?:\\s*의\\s*(\\d+))?','g');
   for(const match of plain(body).matchAll(pattern))references.push(normalize(match[1]+(match[2]?' '+match[2]:'')+' 제'+match[3]+'조'+(match[4]?'의'+match[4]:'')));
+  // Resolve '동법' only inside one non-nested parenthesis that starts with
+  // an explicit supported law. Any intervening law/decree wording makes the
+  // reference ambiguous. These remain pointers, never verified provisions.
+  for(const scope of plain(body).matchAll(/\(([^()]{1,4000})\)/g)){
+    const first=[...scope[1].matchAll(pattern)][0];if(!first||first[2]||!/^[\s「『]*$/.test(scope[1].slice(0,first.index)))continue;
+    const after=first.index+first[0].length,law=first[1]+(first[2]?' '+first[2]:'');
+    for(const alias of scope[1].matchAll(/(?<![가-힣A-Za-z0-9])동법\s*제\s*(\d+)\s*조(?:\s*의\s*(\d+))?/g)){
+      if(alias.index<after||/법|령|규칙/.test(scope[1].slice(after,alias.index).replace(/(?<![가-힣A-Za-z0-9])동법(?![가-힣A-Za-z])/g,'')))continue;
+      references.push(normalize(law+' 제'+alias[1]+'조'+(alias[2]?'의'+alias[2]:'')));
+    }
+  }
   const normalizedBody=normalize(body);
   const seen=new Set();return references.filter(value=>{
     const key=value.replace(/\s/g,'');
@@ -100,7 +111,7 @@ export function relatedLawReferences(entries,body=''){
   });
 }
 export async function sourceDetail(env,item,transactionDate=null){
-  const key=await hash(JSON.stringify({parser:2,id:item.source_id,basis:item.basis_id,article:item.article_id,version:item.version_id,date:transactionDate}));
+  const key=await hash(JSON.stringify({parser:3,id:item.source_id,listing_finality:item.finality||null,basis:item.basis_id,article:item.article_id,version:item.version_id,date:transactionDate}));
   return cached(env,'detail:'+key,6*60*60*1000,async()=>{
     let body,related=[],flags=[],effectiveFrom=item.effective_from||null,effectiveTo=null,url=item.url;
     if(item.kind==='law'){
@@ -137,8 +148,13 @@ export async function sourceDetail(env,item,transactionDate=null){
       if(substantive.join('\n').length<80)throw new ApiError(422,'SOURCE_BODY_UNAVAILABLE','공식 상세 본문을 확보하지 못했습니다. 제목이나 검색 요약을 원문으로 사용하지 않습니다.');
       body=[plain(doc.ntstDcmTtl),plain(doc.ntstDcmGistCntn),plain(doc.ntstDcmCntn),plain(doc.ntstDcmRplyCntn),...html].filter(Boolean).join('\n\n');
       related=relatedLawReferences(listFrom(data,'dcmRltnStttList').filter(r=>r&&(!r.ntstDcmId||String(r.ntstDcmId)===String(item.source_id))).map(r=>r.ntstTextNm),body);
-      const number=plain(doc.ntstDcmDscmCntn);if(item.case_number&&number&&item.case_number!==number)throw new ApiError(422,'DOCUMENT_NUMBER_MISMATCH','문서번호가 일치하지 않습니다.');item={...item,case_number:number||item.case_number,decision_date:isoDate(doc.ntstDcmRgtDt)||item.decision_date};
-      if(item.kind==='case'&&doc.ntstLwsDfntYn!=='Y')flags.push('판결의 확정·상고심 진행 상태 확인 필요');
+      const number=plain(doc.ntstDcmDscmCntn);if(item.case_number&&number&&item.case_number!==number)throw new ApiError(422,'DOCUMENT_NUMBER_MISMATCH','문서번호가 일치하지 않습니다.');
+      // Search metadata is not a substitute for the detailed finality field.
+      // A conflicting positive detail cannot silently remove a negative listing.
+      let finality=doc.ntstLwsDfntYn==='Y'?'final':doc.ntstLwsDfntYn==='N'?'not_confirmed':'unknown';
+      if(finality==='final'&&item.finality==='not_confirmed'){finality='unknown';flags.push('검색 목록과 상세의 확정 상태 불일치: 후속 판결 확인 필요');}
+      item={...item,case_number:number||item.case_number,decision_date:isoDate(doc.ntstDcmRgtDt)||item.decision_date,finality};
+      if(item.kind==='case'&&finality!=='final')flags.push('판결의 확정·상고심 진행 상태 확인 필요');
       if(item.kind==='decision')flags.push('행정 결정례의 효력과 동일 쟁점 법원 판결 확인 필요');
       if(item.kind==='interpretation')flags.push('행정해석의 정비·변경 여부 및 법원 판결과의 관계 확인 필요');
       if(item.kind==='maintenance')flags.push('해석 정비 내역: 종전 해석을 현행 견해로 적용 금지');

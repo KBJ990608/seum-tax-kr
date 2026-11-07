@@ -40,3 +40,21 @@ test('legacy source relation-list substring duplicates do not become extra legal
  assert.deepEqual(relatedLawReferences(['상속세및증여세법 제18조','증여세법 제18조'],'상속세및증여세법 제18조에 따른 검토'),['상속세및증여세법 제18조']);
  assert.deepEqual(relatedLawReferences(['상속세및증여세법 제18조','증여세법 제18조'],'상속세및증여세법 제18조 및 「증여세법 제18조」라는 별도 원문 표기'),['상속세및증여세법 제18조','증여세법 제18조']);
 });
+
+test('same-law branch pointers resolve only inside an explicit bounded parenthesis',()=>{
+ const body='상속세및증여세법 제3조. 상속인(민법 제1000조ㆍ제1001조 및 제1004조의 규정에 의한 상속인, 동법 제1019조 제1항 및 동법 제1057조의 2에 의한 특별연고자를 포함한다). 민법 제772조.';
+ const refs=relatedLawReferences([],body);assert(refs.includes('민법 제1019조'));assert(refs.includes('민법 제1057조의2'));assert(!refs.includes('상속세및증여세법 제1057조의2'));
+ assert.deepEqual(relatedLawReferences([], '민법 제1000조. 다음 문단에서 동법 제1057조의2를 검토한다.'),['민법 제1000조']);
+ assert.deepEqual(relatedLawReferences([], '(동법 제1057조의2 및 민법 제1000조)'),['민법 제1000조']);
+ assert.deepEqual(relatedLawReferences([], '(민법 제1000조 및 상법 제1조에 따라 동법 제1057조의2)'),['민법 제1000조','상법 제1조']);
+ assert.deepEqual(relatedLawReferences([], '(민법 제1000조 및 가상법 제1조에 따라 동법 제1057조의2)'),['민법 제1000조']);
+ assert.deepEqual(relatedLawReferences([], '(민법 제1000조 및 동법 시행령을 검토한 후 동법 제1057조의2)'),['민법 제1000조']);
+});
+
+test('same-law alias never matches a law-name suffix or an ambiguous decree reference',()=>{
+ assert.deepEqual(relatedLawReferences([], '(민법 제1000조 및 노동법 제1조를 검토한다.)'),['민법 제1000조']);
+ assert.deepEqual(relatedLawReferences([], '(민법 제1000조 및 노동법 제1조를 검토한 뒤 동법 제2조)'),['민법 제1000조']);
+ assert.deepEqual(relatedLawReferences([], '(소득세법 시행령 제154조 및 동법 제89조)'),['소득세법 시행령 제154조']);
+ assert.deepEqual(relatedLawReferences([], '(소득세법 시행규칙 제1조 및 동법 제89조)'),['소득세법 시행규칙 제1조']);
+ assert.deepEqual(relatedLawReferences([], '(민법 제1000조 및 A동법 제1조)'),['민법 제1000조']);
+});
