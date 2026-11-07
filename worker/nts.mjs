@@ -68,11 +68,15 @@ export function searchItem(row,collection){
 }
 export async function searchOfficial(env,query,{page=1,limit=8,collection='all'}={}){
   const collections=collection==='all'?Object.keys(collectionNames):[collection];if(collections.some(c=>!collectionNames[c]))throw new ApiError(400,'INVALID_COLLECTION','자료 분류를 확인해 주세요.');
-  const key=await hash(JSON.stringify({query,page,limit,collections}));
+  const key=await hash(JSON.stringify({parser:2,query,page,limit,collections}));
   return cached(env,'search:'+key,15*60*1000,async()=>{
     const data=await ntsAction(env,'ASEISA001MR01',{schVcb:query,collection:collections.join(','),startCount:page,viewCount:limit,sortField:'SCORE/DESC',searchType:'',wnKey:'',ntstTlawClCdList:[],icldVcbCtl:[],exclVcbCtl:[],rltnStttCtl:[],mainIdCtl:[],useSynonymYn:'N'});
-    const list=data.searchResultVO?.collectionList;if(!Array.isArray(list))throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 검색 결과 목록을 확인하지 못했습니다.');
-    return {provider:'국세청 국세법령정보시스템',query,page,limit,retrieved_at:new Date().toISOString(),collections:collections.map(name=>{const c=list.find(c=>c.nameEn===name);return {id:name,title:collectionNames[name],total:Number(c?.totalCount||0),documents:(c?.resultList||[]).map(r=>searchItem(r,name)).filter(Boolean)};})};
+    const list=data.searchResultVO?.collectionList;if(!Array.isArray(list)||list.some(c=>!c||typeof c!=='object'||Array.isArray(c)))throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 검색 결과 목록을 확인하지 못했습니다.');
+    return {provider:'국세청 국세법령정보시스템',query,page,limit,retrieved_at:new Date().toISOString(),collections:collections.map(name=>{
+      const c=list.find(c=>c.nameEn===name),raw=c?.totalCount??0,total=Number(raw),rows=c?.resultList??[];
+      if(!['number','string'].includes(typeof raw)||!/^\d+$/.test(String(raw).trim())||!Number.isSafeInteger(total)||total<0||!Array.isArray(rows)||rows.some(r=>!r||typeof r!=='object'||Array.isArray(r)))throw new ApiError(502,'OFFICIAL_SOURCE_FORMAT','공식 검색 결과의 건수 또는 목록 형식을 확인하지 못했습니다.');
+      return {id:name,title:collectionNames[name],total,documents:rows.map(r=>searchItem(r,name)).filter(Boolean)};
+    })};
   });
 }
 function listFrom(value,key){return Array.isArray(value)?value:Array.isArray(value?.[key])?value[key]:[];}
@@ -111,7 +115,7 @@ export function relatedLawReferences(entries,body=''){
   });
 }
 export async function sourceDetail(env,item,transactionDate=null){
-  const key=await hash(JSON.stringify({parser:3,id:item.source_id,listing_finality:item.finality||null,basis:item.basis_id,article:item.article_id,version:item.version_id,date:transactionDate}));
+  const key=await hash(JSON.stringify({parser:item.kind==='law'?4:3,id:item.source_id,listing_finality:item.finality||null,basis:item.basis_id,article:item.article_id,version:item.version_id,date:transactionDate}));
   return cached(env,'detail:'+key,6*60*60*1000,async()=>{
     let body,related=[],flags=[],effectiveFrom=item.effective_from||null,effectiveTo=null,url=item.url;
     if(item.kind==='law'){
@@ -121,6 +125,10 @@ export async function sourceDetail(env,item,transactionDate=null){
         const versions=listFrom(history,'txaStttHsryDVOList').map(v=>({...v,date:isoDate(v.ntstEnfrDt)})).filter(v=>v.date).sort((a,b)=>b.date.localeCompare(a.date));
         const applicable=versions.find(v=>v.date<=transactionDate);
         if(!applicable)throw new ApiError(422,'HISTORICAL_LAW_UNAVAILABLE','거래 기준일의 법령 버전을 확인하지 못했습니다.');
+        // Equal effective dates do not establish which amendment supersedes
+        // another. Response order is not legal precedence; abstain instead.
+        const candidates=versions.filter(v=>v.date===applicable.date);
+        if(candidates.some(v=>(v.ntstBscId&&String(v.ntstBscId)!==String(item.basis_id))||String(v.ntstBrkdId)!==String(applicable.ntstBrkdId)||String(v.ntstPmgNo||'')!==String(applicable.ntstPmgNo||'')))throw new ApiError(422,'LAW_VERSION_AMBIGUOUS','같은 시행일의 법령 버전 또는 식별정보가 충돌해 적용 버전을 확정하지 않았습니다. 공식 연혁과 부칙을 확인해 주세요.');
         version=applicable.ntstBrkdId;promulgation=applicable.ntstPmgNo;effectiveFrom=applicable.date;
         const next=versions.filter(v=>v.date>effectiveFrom).sort((a,b)=>a.date.localeCompare(b.date))[0];if(next)effectiveTo=new Date(Date.parse(next.date)-86400000).toISOString().slice(0,10);
         url=base+'/st/USESTA002M.do?'+new URLSearchParams({ntstBscId:item.basis_id,ntstBrkdId:version,ntstTextUqno:item.article_id,ntstSysClCd:item.system_code,ntstTlawClCd:item.tax_code});
@@ -137,7 +145,7 @@ export async function sourceDetail(env,item,transactionDate=null){
       if(parts.some(p=>(p.ntstBrkdId&&String(p.ntstBrkdId)!==String(version))||(p.ntstBscId&&String(p.ntstBscId)!==String(item.basis_id))))throw new ApiError(422,'LAW_VERSION_UNVERIFIED','법령 원문과 선택 버전이 일치하지 않습니다.');
       if(plain(parts.map(p=>p.ntstTextCntn||'').join('\n')).length<10)throw new ApiError(422,'SOURCE_BODY_UNAVAILABLE','실질적인 조문 본문을 확보하지 못했습니다.');
       body=parts.map(p=>plain([p.ntstTextUqnm||p.ntstTextUqnoNm,p.ntstTextNm||p.ntstBracketTextNm,p.ntstTextCntn,p.ntstTextEnlrDscCntn].filter(Boolean).join(' '))).join('\n');
-      item={...item,title:[item.law_title,plain(parts[0].ntstTextUqnm||parts[0].ntstTextUqnoNm),plain(parts[0].ntstTextNm||parts[0].ntstBracketTextNm)].filter(Boolean).join(' ')};
+      item={...item,version_id:String(version),promulgation_number:promulgation||'',title:[item.law_title,plain(parts[0].ntstTextUqnm||parts[0].ntstTextUqnoNm),plain(parts[0].ntstTextNm||parts[0].ntstBracketTextNm)].filter(Boolean).join(' ')};
       flags.push('법령 본문과 별도로 부칙·적용례·경과규정 확인 필요');
     }else{
       const data=await ntsAction(env,'ASIQTB002PR01',{dcmDVO:{ntstDcmId:item.source_id}}),doc=data.dcmDVO;
